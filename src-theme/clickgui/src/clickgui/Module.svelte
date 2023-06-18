@@ -9,7 +9,7 @@
 
     let name = instance.getName();
 
-    const hiddenSettings = ["Enabled", "Hidden", "Bind"];
+    const hiddenSettings = ["Enabled", "Hidden", "Bind", "Hold"];
 
     function toJavaScriptArray(a) {
         const v = [];

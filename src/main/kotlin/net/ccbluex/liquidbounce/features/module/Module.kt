@@ -44,6 +44,7 @@ open class Module(
     name: String, // name parameter in configurable
     @Exclude val category: Category, // module category
     bind: Int = GLFW.GLFW_KEY_UNKNOWN, // default bind
+    hold: Boolean = false, // default hold
     state: Boolean = false, // default state
     @Exclude val disableActivation: Boolean = false, // disable activation
     hide: Boolean = false // default hide
@@ -97,6 +98,7 @@ open class Module(
     }
 
     var bind by int("Bind", bind, 0..0)
+    var hold by boolean("Hold", hold)
     var hidden by boolean("Hidden", hide)
 
     open val translationBaseKey: String

@@ -42,16 +42,25 @@ object CommandBind {
                     .verifiedBy(ParameterBuilder.STRING_VALIDATOR)
                     .required()
                     .build()
+            ).parameter(
+                ParameterBuilder
+                    .begin<String>("toggleOrHold")
+                    .verifiedBy(ParameterBuilder.STRING_VALIDATOR)
+                    .optional()
+                    .build()
             )
             .handler { command, args ->
                 val name = args[0] as String
                 val keyName = args[1] as String
-
                 val module = ModuleManager.find { it.name.equals(name, true) }
-                    ?: throw CommandException(command.result("moduleNotFound", name))
+                ?: throw CommandException(command.result("moduleNotFound", name))
 
                 val bindKey = key(keyName)
                 module.bind = bindKey
+
+                if(args.size > 3){
+                    module.hold = (args[2] as String == "hold")
+                }
 
                 chat(regular(command.result("moduleBound", variable(module.name), variable(keyName(bindKey)))))
             }
