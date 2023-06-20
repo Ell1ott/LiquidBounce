@@ -45,6 +45,7 @@ import net.minecraft.util.hit.HitResult
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Vec3d
 import kotlin.math.abs
+import kotlin.booleanArrayOf
 
 /**
  * NoFall module
@@ -166,7 +167,7 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
                 return@repeatable
             }
             if(waterplaced){
-                doPlacement(rayTraceResult)
+                doPlacement(rayTraceResult, true)
                 waterplaced = false
                 currentTarget = null
                 pos = null
@@ -176,12 +177,17 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
             }
             val item = itemForMLG ?: return@repeatable
 
-            val pickupWait = pickupDelay.random()
+            if(player.inventory.getStack(item).item.equals(Items.WATER_BUCKET)){
+                chat("item is water")
+                SilentHotbar.selectSlotSilently(this, item, 100)
+                doPlacement(rayTraceResult, true)
+                waterplaced = true
+                wait(pickupDelay.random())
 
-            SilentHotbar.selectSlotSilently(this, item, 100)
-            doPlacement(rayTraceResult)
-            waterplaced = true
-            wait(pickupWait)
+            } else {
+                SilentHotbar.selectSlotSilently(this, item, 1)
+                doPlacement(rayTraceResult, false)
+            }
 
 
 
@@ -190,39 +196,41 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
         private fun findClosestItem(items: Array<Item>) = (0..8).filter { player.inventory.getStack(it).item in items }
             .minByOrNull { abs(player.inventory.selectedSlot - it) }
 
-        private fun doPlacement(rayTraceResult: BlockHitResult) {
+        private fun doPlacement(rayTraceResult: BlockHitResult, isWater: Boolean) {
             val stack = player.mainHandStack
             val count = stack.count
 
-            // val interactBlock = interaction.interactBlock(player, Hand.MAIN_HAND, rayTraceResult)
 
-            // if (interactBlock.isAccepted) {
-            //     if (interactBlock.shouldSwingHand()) {
-            //         player.swingHand(Hand.MAIN_HAND)
+            if(isWater){
+                if (!stack.isEmpty) {
+                    val interactItem = interaction.interactItem(player, Hand.MAIN_HAND)
 
-            //         if (!stack.isEmpty && (stack.count != count || interaction.hasCreativeInventory())) {
-            //             mc.gameRenderer.firstPersonRenderer.resetEquipProgress(Hand.MAIN_HAND)
-            //         }
-            //     }
+                    if (interactItem.isAccepted) {
+                        if (interactItem.shouldSwingHand()) {
+                            player.swingHand(Hand.MAIN_HAND)
+                        }
 
-            //     return
-            // } else if (interactBlock == ActionResult.FAIL) {
-            //     return
-            // }
-
-            if (!stack.isEmpty) {
-                val interactItem = interaction.interactItem(player, Hand.MAIN_HAND)
-
-                if (interactItem.isAccepted) {
-                    if (interactItem.shouldSwingHand()) {
-                        player.swingHand(Hand.MAIN_HAND)
+                        mc.gameRenderer.firstPersonRenderer.resetEquipProgress(Hand.MAIN_HAND)
+                        return
                     }
 
-                    mc.gameRenderer.firstPersonRenderer.resetEquipProgress(Hand.MAIN_HAND)
+                }
+            } else {
+                val interactBlock = interaction.interactBlock(player, Hand.MAIN_HAND, rayTraceResult)
+
+                if (interactBlock.isAccepted) {
+                    if (interactBlock.shouldSwingHand()) {
+                        player.swingHand(Hand.MAIN_HAND)
+
+                        if (!stack.isEmpty && (stack.count != count || interaction.hasCreativeInventory())) {
+                            mc.gameRenderer.firstPersonRenderer.resetEquipProgress(Hand.MAIN_HAND)
+                        }
+                    }
 
                     return
+                } else if (interactBlock == ActionResult.FAIL) {
+                    return
                 }
-
             }
         }
     }
