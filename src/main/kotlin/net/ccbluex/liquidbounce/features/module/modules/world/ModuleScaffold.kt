@@ -398,7 +398,8 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
                     currPos,
                     first.first,
                     face.first.from.y + currPos.y,
-                    RotationManager.makeRotation(face.second.add(Vec3d.of(currPos)), player.eyes)
+                    RotationManager.makeRotation(face.second.add(Vec3d.of(currPos)), player.eyes),
+                    face.second.add(Vec3d.of(currPos))
                 )
             }
         }
@@ -446,6 +447,6 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
 
     }
 
-    data class Target(val blockPos: BlockPos, val direction: Direction, val minY: Double, val rotation: Rotation)
+    data class Target(val blockPos: BlockPos, val direction: Direction, val minY: Double, val rotation: Rotation, val facepos: Vec3d)
 
 }

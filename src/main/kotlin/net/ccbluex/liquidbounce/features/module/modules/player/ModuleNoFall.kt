@@ -21,12 +21,15 @@ package net.ccbluex.liquidbounce.features.module.modules.player
 
 import net.ccbluex.liquidbounce.config.Choice
 import net.ccbluex.liquidbounce.config.ChoiceConfigurable
+import net.ccbluex.liquidbounce.config.ToggleableConfigurable
 import net.ccbluex.liquidbounce.event.*
+import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
 import net.ccbluex.liquidbounce.utils.aiming.RotationsConfigurable
+import net.ccbluex.liquidbounce.utils.entity.eyes
 import net.ccbluex.liquidbounce.utils.aiming.raycast
 import net.ccbluex.liquidbounce.utils.block.getBlock
 import net.ccbluex.liquidbounce.utils.client.SilentHotbar
@@ -39,6 +42,8 @@ import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.hit.HitResult
+import net.minecraft.util.math.BlockPos
+import net.minecraft.util.math.Vec3d
 import kotlin.math.abs
 
 /**
@@ -106,9 +111,14 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
 
         val minFallDist by float("MinFallDistance", 5f, 2f..50f)
 
+        val pickup by boolean("pickup", true)
+        val pickupDelay by intRange("pickupDelay", 3..4, 1..20)
+
         val rotationsConfigurable = tree(RotationsConfigurable())
 
         var currentTarget: ModuleScaffold.Target? = null
+
+        var waterplaced: Boolean = false
 
         val itemForMLG
             get() = findClosestItem(
@@ -116,8 +126,13 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
                     Items.WATER_BUCKET, Items.COBWEB, Items.POWDER_SNOW_BUCKET, Items.HAY_BLOCK, Items.SLIME_BLOCK
                 )
             )
-
+        var pos: Vec3d? = null
         val tickMovementHandler = handler<PlayerNetworkMovementTickEvent> {
+            if(waterplaced){
+                RotationManager.aimAt(RotationManager.makeRotation(pos!!, player.eyes), configurable = rotationsConfigurable)
+            }
+
+
             if (it.state != EventState.PRE || player.fallDistance <= minFallDist || itemForMLG == null) {
                 return@handler
             }
@@ -131,30 +146,47 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
                 return@handler
             }
 
+
             currentTarget = ModuleScaffold.updateTarget(collision.up())
+            // pos = currentTarget.face.second.add(Vec3d.of(currentTarget.currPos)
+
 
             val target = currentTarget ?: return@handler
 
+            pos = target.facepos
+            chat(pos!!.getX().toString() + ", " +  pos!!.getY().toString() + ", " + pos!!.getZ().toString())
             RotationManager.aimAt(target.rotation, configurable = rotationsConfigurable)
         }
 
-        val tickHandler = handler<GameTickEvent> {
-            val target = currentTarget ?: return@handler
-            val rotation = RotationManager.currentRotation ?: return@handler
+        val repeatable = repeatable {
+            val target = currentTarget ?: return@repeatable
+            val rotation = RotationManager.currentRotation ?: return@repeatable
 
-            val rayTraceResult = raycast(4.5, rotation) ?: return@handler
+            val rayTraceResult = raycast(4.5, rotation) ?: return@repeatable
 
             if (rayTraceResult.type != HitResult.Type.BLOCK || rayTraceResult.blockPos != target.blockPos || rayTraceResult.side != target.direction) {
-                return@handler
+                return@repeatable
             }
+            if(waterplaced){
+                doPlacement(rayTraceResult)
+                waterplaced = false
+                currentTarget = null
+                pos = null
+                SilentHotbar.resetSlot(this) //swaps back after remving the water
+                return@repeatable
 
-            val item = itemForMLG ?: return@handler
+            }
+            val item = itemForMLG ?: return@repeatable
 
-            SilentHotbar.selectSlotSilently(this, item, 1)
+            val pickupWait = pickupDelay.random()
 
+            SilentHotbar.selectSlotSilently(this, item, 100)
             doPlacement(rayTraceResult)
+            waterplaced = true
+            wait(pickupWait)
 
-            currentTarget = null
+
+
         }
 
         private fun findClosestItem(items: Array<Item>) = (0..8).filter { player.inventory.getStack(it).item in items }
@@ -164,21 +196,21 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
             val stack = player.mainHandStack
             val count = stack.count
 
-            val interactBlock = interaction.interactBlock(player, Hand.MAIN_HAND, rayTraceResult)
+            // val interactBlock = interaction.interactBlock(player, Hand.MAIN_HAND, rayTraceResult)
 
-            if (interactBlock.isAccepted) {
-                if (interactBlock.shouldSwingHand()) {
-                    player.swingHand(Hand.MAIN_HAND)
+            // if (interactBlock.isAccepted) {
+            //     if (interactBlock.shouldSwingHand()) {
+            //         player.swingHand(Hand.MAIN_HAND)
 
-                    if (!stack.isEmpty && (stack.count != count || interaction.hasCreativeInventory())) {
-                        mc.gameRenderer.firstPersonRenderer.resetEquipProgress(Hand.MAIN_HAND)
-                    }
-                }
+            //         if (!stack.isEmpty && (stack.count != count || interaction.hasCreativeInventory())) {
+            //             mc.gameRenderer.firstPersonRenderer.resetEquipProgress(Hand.MAIN_HAND)
+            //         }
+            //     }
 
-                return
-            } else if (interactBlock == ActionResult.FAIL) {
-                return
-            }
+            //     return
+            // } else if (interactBlock == ActionResult.FAIL) {
+            //     return
+            // }
 
             if (!stack.isEmpty) {
                 val interactItem = interaction.interactItem(player, Hand.MAIN_HAND)
@@ -189,8 +221,10 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
                     }
 
                     mc.gameRenderer.firstPersonRenderer.resetEquipProgress(Hand.MAIN_HAND)
+
                     return
                 }
+
             }
         }
     }
