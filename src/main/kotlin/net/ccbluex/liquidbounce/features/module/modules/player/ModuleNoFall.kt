@@ -178,7 +178,6 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
             val item = itemForMLG ?: return@repeatable
 
             if(player.inventory.getStack(item).item.equals(Items.WATER_BUCKET)){
-                chat("item is water")
                 SilentHotbar.selectSlotSilently(this, item, 100)
                 doPlacement(rayTraceResult, true)
                 waterplaced = true
@@ -187,6 +186,8 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
             } else {
                 SilentHotbar.selectSlotSilently(this, item, 1)
                 doPlacement(rayTraceResult, false)
+                currentTarget = null
+
             }
 
 
