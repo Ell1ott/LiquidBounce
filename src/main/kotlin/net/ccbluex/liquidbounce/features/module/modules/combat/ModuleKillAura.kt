@@ -234,6 +234,7 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
 
                     // Wait until the un-blocking delay time is up
                     if (whileBlocking.blockingTicks > 0) {
+                        mc.options.useKey.isPressed = false
                         wait(whileBlocking.blockingTicks)
                     }
                 }
@@ -262,6 +263,7 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
                     interaction.sendSequencedPacket(world) { sequence ->
                         PlayerInteractItemC2SPacket(player.activeHand, sequence)
                     }
+                    mc.options.useKey.isPressed = true
 
                     if (simulateInventoryClosing && isInInventoryScreen) {
                         openInventorySilently()
