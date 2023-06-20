@@ -107,6 +107,7 @@ object ModuleTrigger : Module("Trigger", Category.COMBAT) {
 
             Use.STOP -> {
                 interaction.stopUsingItem(player)
+                mc.options.useKey.isPressed = false
 
                 if (delayPostStopUse > 0) {
                     wait(delayPostStopUse)
