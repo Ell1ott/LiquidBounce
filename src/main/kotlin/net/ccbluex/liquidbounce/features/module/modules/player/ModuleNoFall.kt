@@ -148,13 +148,11 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
 
 
             currentTarget = ModuleScaffold.updateTarget(collision.up())
-            // pos = currentTarget.face.second.add(Vec3d.of(currentTarget.currPos)
 
 
             val target = currentTarget ?: return@handler
 
             pos = target.facepos
-            chat(pos!!.getX().toString() + ", " +  pos!!.getY().toString() + ", " + pos!!.getZ().toString())
             RotationManager.aimAt(target.rotation, configurable = rotationsConfigurable)
         }
 
