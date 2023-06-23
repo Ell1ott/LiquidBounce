@@ -18,12 +18,13 @@
  */
 package net.ccbluex.liquidbounce.features.module.modules.combat
 
-import net.ccbluex.liquidbounce.config.NamedChoice
+// import net.ccbluex.liquidbounce.config.NamedChoice
 import net.ccbluex.liquidbounce.config.ToggleableConfigurable
 import net.ccbluex.liquidbounce.event.*
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.features.module.modules.combat.ModuleKillAura.RaycastMode.*
+import net.ccbluex.liquidbounce.utils.block.getState
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
 import net.ccbluex.liquidbounce.utils.aiming.RotationsConfigurable
 import net.ccbluex.liquidbounce.utils.aiming.facingEnemy
@@ -31,11 +32,12 @@ import net.ccbluex.liquidbounce.utils.aiming.raytraceEntity
 import net.ccbluex.liquidbounce.utils.aiming.raycast
 import net.ccbluex.liquidbounce.utils.client.MC_1_8
 import net.ccbluex.liquidbounce.utils.client.protocolVersion
+import net.ccbluex.liquidbounce.utils.client.chat
+import net.ccbluex.liquidbounce.utils.client.SilentHotbar
 import net.ccbluex.liquidbounce.utils.combat.CpsScheduler
 import net.ccbluex.liquidbounce.utils.combat.TargetTracker
 import net.ccbluex.liquidbounce.utils.combat.shouldBeAttacked
 import net.ccbluex.liquidbounce.utils.entity.*
-import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.item.openInventorySilently
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen
 import net.minecraft.client.gui.screen.ingame.InventoryScreen
@@ -45,7 +47,9 @@ import net.minecraft.entity.EntityGroup
 import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.attribute.EntityAttributes
 import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.item.AxeItem
+import net.minecraft.block.Blocks
+import net.minecraft.item.Item
+import net.minecraft.item.Items
 import net.minecraft.network.packet.c2s.play.*
 import net.minecraft.util.Hand
 import net.minecraft.util.ActionResult
@@ -57,7 +61,10 @@ import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.hit.HitResult
 import net.minecraft.world.GameMode
 import kotlin.math.sqrt
+import kotlin.math.floor
+import kotlin.math.roundToInt
 import kotlin.random.Random
+import kotlin.math.abs
 
 /**
  * KillAura module
@@ -68,18 +75,13 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
 
     // Attack speed
     // private val cps by intRange("CPS", 5..8, 1..20)
-
     // Range
     private val range by float("Range", 4.2f, 1f..8f)
     private val scanExtraRange by float("ScanExtraRange", 3.0f, 0.0f..7.0f)
 
-    private val wallRange by float("WallRange", 3f, 0f..8f).listen {
-        if (it > range) {
-            range
-        } else {
-            it
-        }
-    }
+    private val disableAfterPlacement by boolean("DisableAfterPlacement", true)
+    private val swapBackDelay by intRange("SwapBackDelay", 1..3, 1..20)
+
 
     // Target
     private val targetTracker = tree(TargetTracker())
@@ -104,19 +106,26 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
     init {
         tree(whileBlocking)
     }
-    private val raycast by enumChoice("Raycast", TRACE_ALL, values())
 
-    private val failRate by int("FailRate", 0, 0..100)
 
     private val ignoreOpenInventory by boolean("IgnoreOpenInventory", true)
     private val simulateInventoryClosing by boolean("SimulateInventoryClosing", true)
 
-    private val cpsTimer = CpsScheduler()
+    val itemForMLG
+        get() = findClosestItem(
+            arrayOf(
+                Items.LAVA_BUCKET, Items.COBWEB
+            )
+        )
+
 
 
     override fun disable() {
         targetTracker.cleanup()
     }
+
+    private fun findClosestItem(items: Array<Item>) = (0..8).filter { player.inventory.getStack(it).item in items }
+            .minByOrNull { abs(player.inventory.selectedSlot - it) }
 
 //    val renderHandler = handler<EngineRenderEvent> {
 //        val currentTarget = targetTracker.lockedOnTarget ?: return@handler
@@ -178,19 +187,20 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
 
     val repeatable = repeatable {
         val isInInventoryScreen = mc.currentScreen is InventoryScreen
-
         // Check if there is target to attack
         val target = targetTracker.lockedOnTarget ?: return@repeatable
         // Did you ever send a rotation before?
         val rotation = RotationManager.currentRotation ?: return@repeatable
 
         val rayTraceResult = raycast(4.5, rotation) ?: return@repeatable
-        chat(rayTraceResult.blockPos.toString())
-        if (rayTraceResult.type != HitResult.Type.BLOCK || rayTraceResult.blockPos.up() != target.blockPos) {
+        if (rayTraceResult.type != HitResult.Type.BLOCK || rayTraceResult.blockPos.offset(rayTraceResult.side) != targetBlockPos) {
             return@repeatable
         }
+        val slot = itemForMLG ?: return@repeatable
+        val item = player.inventory.getStack(slot).item
 
-        if(doPlacement(rayTraceResult, true)){
+        SilentHotbar.selectSlotSilently(this, slot, swapBackDelay.random())
+        if(doPlacement(rayTraceResult, item == Items.LAVA_BUCKET) && disableAfterPlacement){
             enabled = false
         }
 
@@ -360,7 +370,7 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
                 player.x - player.prevX, player.y - player.prevY, player.z - player.prevZ
             ).multiply(predictedTicks)
 
-            val box = target.box.offset(targetPrediction)
+            // val box = target.box.offset(targetPrediction)
 
             // find best spot
             // val spot = RotationManager.raytraceBox(
@@ -369,67 +379,26 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
 
             // lock on target tracker
             targetTracker.lock(target)
+
+            val targetpos = target.pos.add(targetPrediction)
             // aim at targets feat
             targetBlockPos = BlockPos(
-                target.pos.add(targetPrediction).x.toInt(),
-                target.pos.add(targetPrediction).y.toInt(),
-                target.pos.add(targetPrediction).z.toInt()
+                floor(targetpos.x).toInt(),
+                floor(targetpos.y).toInt(),
+                floor(targetpos.z).toInt()
                 )
 
+            val state = targetBlockPos?.getState()
 
-            val rotation = RotationManager.makeRotation(target.pos.add(targetPrediction), eyes)
+            if (state?.block == Blocks.LAVA) {
+                continue
+            }
+            val rotation = RotationManager.makeRotation(targetpos, eyes)
             RotationManager.aimAt(rotation, configurable = rotations)
             break
         }
     }
 
-    private fun attackEntity(entity: Entity) {
-    //     if (ModuleCriticals.wouldCrit(true) && unsprintOnCrit) {
-    //         network.sendPacket(ClientCommandC2SPacket(player, ClientCommandC2SPacket.Mode.STOP_SPRINTING))
-    //         player.isSprinting = false
-    //     }
 
-    //     EventManager.callEvent(AttackEvent(entity))
-
-    //     // Swing before attacking (on 1.8)
-    //     if (swing && protocolVersion == MC_1_8) {
-    //         player.swingHand(Hand.MAIN_HAND)
-    //     }
-
-    //     network.sendPacket(PlayerInteractEntityC2SPacket.attack(entity, player.isSneaking))
-
-    //     // Swing after attacking (on 1.9+)
-    //     if (swing && protocolVersion != MC_1_8) {
-    //         player.swingHand(Hand.MAIN_HAND)
-    //     }
-
-    //     if (keepSprint) {
-    //         var genericAttackDamage = player.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE).toFloat()
-    //         var magicAttackDamage = if (entity is LivingEntity) {
-    //             EnchantmentHelper.getAttackDamage(player.mainHandStack, entity.group)
-    //         } else {
-    //             EnchantmentHelper.getAttackDamage(player.mainHandStack, EntityGroup.DEFAULT)
-    //         }
-
-    //         val cooldownProgress = player.getAttackCooldownProgress(0.5f)
-    //         genericAttackDamage *= 0.2f + cooldownProgress * cooldownProgress * 0.8f
-    //         magicAttackDamage *= cooldownProgress
-
-    //         if (genericAttackDamage > 0.0f && magicAttackDamage > 0.0f) {
-    //             player.addEnchantedHitParticles(entity)
-    //         }
-    //     } else {
-    //         if (interaction.currentGameMode != GameMode.SPECTATOR) {
-    //             player.attack(entity)
-    //         }
-    //     }
-
-        // reset cooldown
-        // player.resetLastAttackedTicks()
-    }
-
-    enum class RaycastMode(override val choiceName: String) : NamedChoice {
-        TRACE_NONE("None"), TRACE_ONLYENEMY("Enemy"), TRACE_ALL("All")
-    }
 
 }
