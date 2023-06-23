@@ -79,11 +79,13 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleCriticals,
             ModuleHitbox,
             ModuleKillAura,
+            ModulePlaceAttack,
             ModulePerfectHit,
             ModuleSuperKnockback,
             ModuleTimerRange,
             ModuleTrigger,
             ModuleVelocity,
+
 
             // Exploit
             ModuleAbortBreaking,
