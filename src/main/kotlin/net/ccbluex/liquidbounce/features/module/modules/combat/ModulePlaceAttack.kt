@@ -27,43 +27,25 @@ import net.ccbluex.liquidbounce.features.module.modules.combat.ModuleKillAura.Ra
 import net.ccbluex.liquidbounce.utils.block.getState
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
 import net.ccbluex.liquidbounce.utils.aiming.RotationsConfigurable
-import net.ccbluex.liquidbounce.utils.aiming.facingEnemy
-import net.ccbluex.liquidbounce.utils.aiming.raytraceEntity
 import net.ccbluex.liquidbounce.utils.aiming.raycast
-import net.ccbluex.liquidbounce.utils.client.MC_1_8
-import net.ccbluex.liquidbounce.utils.client.protocolVersion
 import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.client.SilentHotbar
-import net.ccbluex.liquidbounce.utils.combat.CpsScheduler
 import net.ccbluex.liquidbounce.utils.combat.TargetTracker
-import net.ccbluex.liquidbounce.utils.combat.shouldBeAttacked
 import net.ccbluex.liquidbounce.utils.entity.*
-import net.ccbluex.liquidbounce.utils.item.openInventorySilently
+import net.minecraft.block.Block
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen
 import net.minecraft.client.gui.screen.ingame.InventoryScreen
-import net.minecraft.enchantment.EnchantmentHelper
-import net.minecraft.entity.Entity
-import net.minecraft.entity.EntityGroup
-import net.minecraft.entity.LivingEntity
-import net.minecraft.entity.attribute.EntityAttributes
-import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.block.Blocks
 import net.minecraft.item.Item
 import net.minecraft.item.Items
 import net.minecraft.network.packet.c2s.play.*
-import net.minecraft.util.Hand
 import net.minecraft.util.ActionResult
+import net.minecraft.util.Hand
 import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Direction
 import net.minecraft.util.math.Vec3d
-import net.minecraft.util.math.Vec3i
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.hit.HitResult
-import net.minecraft.world.GameMode
-import kotlin.math.sqrt
 import kotlin.math.floor
-import kotlin.math.roundToInt
-import kotlin.random.Random
 import kotlin.math.abs
 
 /**
@@ -81,7 +63,8 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
 
     private val disableAfterPlacement by boolean("DisableAfterPlacement", true)
     private val swapBackDelay by intRange("SwapBackDelay", 1..3, 1..20)
-
+    private val pauseKillaura by boolean("PauseKillaura", true)
+    private val self by boolean("self", false)
 
     // Target
     private val targetTracker = tree(TargetTracker())
@@ -93,7 +76,7 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
     private val predict by floatRange("Predict", 0f..0f, 0f..5f)
 
     // Bypass techniques
-    private val swing by boolean("Swing", true)
+    private val clientSwing by boolean("Swing", true)
     // private val keepSprint by boolean("KeepSprint", true)
     // private val unsprintOnCrit by boolean("UnsprintOnCrit", true)
     // private val attackShielding by boolean("AttackShielding", false)
@@ -111,6 +94,8 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
     private val ignoreOpenInventory by boolean("IgnoreOpenInventory", true)
     private val simulateInventoryClosing by boolean("SimulateInventoryClosing", true)
 
+    val blocks = arrayListOf<Block>(Blocks.LAVA, Blocks.COBWEB)
+
     val itemForMLG
         get() = findClosestItem(
             arrayOf(
@@ -118,14 +103,24 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
             )
         )
 
-
+    var waskillAuraOn = false
 
     override fun disable() {
         targetTracker.cleanup()
+        if(pauseKillaura && waskillAuraOn){
+            ModuleKillAura.enabled = true
+        }
+    }
+    override fun enable() {
+
+        if(pauseKillaura){
+            waskillAuraOn = ModuleKillAura.enabled
+            ModuleKillAura.enabled = false
+        }
     }
 
     private fun findClosestItem(items: Array<Item>) = (0..8).filter { player.inventory.getStack(it).item in items }
-            .minByOrNull { abs(player.inventory.selectedSlot - it) }
+        .minByOrNull { abs(player.inventory.selectedSlot - it) }
 
 //    val renderHandler = handler<EngineRenderEvent> {
 //        val currentTarget = targetTracker.lockedOnTarget ?: return@handler
@@ -201,6 +196,7 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
 
         SilentHotbar.selectSlotSilently(this, slot, swapBackDelay.random())
         if(doPlacement(rayTraceResult, item == Items.LAVA_BUCKET) && disableAfterPlacement){
+            disable()
             enabled = false
         }
 
@@ -298,7 +294,14 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
         //     }
         // }
     }
+    private fun swing(clientSide: Boolean) {
+        if(clientSide) {
+            player.swingHand(Hand.MAIN_HAND)
+        }else {
+            network.sendPacket(HandSwingC2SPacket(Hand.MAIN_HAND))
+        }
 
+    }
     private fun doPlacement(rayTraceResult: BlockHitResult, isWater: Boolean): Boolean {
         val stack = player.mainHandStack
         val count = stack.count
@@ -310,7 +313,7 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
 
                 if (interactItem.isAccepted) {
                     if (interactItem.shouldSwingHand()) {
-                        player.swingHand(Hand.MAIN_HAND)
+                        swing(clientSwing)
                     }
 
                     mc.gameRenderer.firstPersonRenderer.resetEquipProgress(Hand.MAIN_HAND)
@@ -323,7 +326,7 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
 
             if (interactBlock.isAccepted) {
                 if (interactBlock.shouldSwingHand()) {
-                    player.swingHand(Hand.MAIN_HAND)
+                    swing(clientSwing)
 
                     if (!stack.isEmpty && (stack.count != count || interaction.hasCreativeInventory())) {
                         mc.gameRenderer.firstPersonRenderer.resetEquipProgress(Hand.MAIN_HAND)
@@ -380,25 +383,23 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
             // lock on target tracker
             targetTracker.lock(target)
 
-            val targetpos = target.pos.add(targetPrediction)
+            val targetpos = target.pos.add(targetPrediction.normalize())
             // aim at targets feat
-            targetBlockPos = BlockPos(
+            val targetBPos = BlockPos(
                 floor(targetpos.x).toInt(),
                 floor(targetpos.y).toInt(),
                 floor(targetpos.z).toInt()
-                )
+            )
 
-            val state = targetBlockPos?.getState()
-
-            if (state?.block == Blocks.LAVA) {
+            if(blocks.contains(targetBPos?.getState()?.block) || (Vec3d.ofCenter(targetBPos).distanceTo(player.pos) < 1)){
                 continue
             }
+            targetBlockPos = targetBPos
+
             val rotation = RotationManager.makeRotation(targetpos, eyes)
             RotationManager.aimAt(rotation, configurable = rotations)
             break
         }
     }
-
-
 
 }
