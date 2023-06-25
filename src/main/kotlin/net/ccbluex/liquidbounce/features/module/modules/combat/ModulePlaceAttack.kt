@@ -64,7 +64,7 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
     private val disableAfterPlacement by boolean("DisableAfterPlacement", true)
     private val swapBackDelay by intRange("SwapBackDelay", 1..3, 1..20)
     private val pauseKillaura by boolean("PauseKillaura", true)
-    private val self by boolean("self", false)
+    private val self by boolean("Self", false)
 
     // Target
     private val targetTracker = tree(TargetTracker())
@@ -194,105 +194,19 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
         val slot = itemForMLG ?: return@repeatable
         val item = player.inventory.getStack(slot).item
 
+        if(player.isBlocking){
+            if(!whileBlocking.enabled){
+                return@repeatable
+            }
+        } else if(player.isUsingItem() && !whileUsingItem){
+            return@repeatable
+        }
+
         SilentHotbar.selectSlotSilently(this, slot, swapBackDelay.random())
         if(doPlacement(rayTraceResult, item == Items.LAVA_BUCKET) && disableAfterPlacement){
             disable()
             enabled = false
         }
-
-        // if (target.boxedDistanceTo(player) <= range && facingEnemy(
-        //         target, rotation, range.toDouble(), wallRange.toDouble()
-        //     )
-        // ) {
-        //     // Check if between enemy and player is another entity
-        //     val raycastedEntity = raytraceEntity(range.toDouble(), rotation, filter = {
-        //         when (raycast) {
-        //             TRACE_NONE -> false
-        //             TRACE_ONLYENEMY -> it.shouldBeAttacked()
-        //             TRACE_ALL -> true
-        //         }
-        //     }) ?: target
-
-        //     // Swap enemy if there is a better enemy
-        //     // todo: compare current target to locked target
-        //     if (raycastedEntity.shouldBeAttacked() && raycastedEntity != target) {
-        //         targetTracker.lock(raycastedEntity)
-        //     }
-
-        //     // Attack enemy according to cps and cooldown
-        //     val clicks = cpsTimer.clicks(condition = {
-        //         (!cooldown || player.getAttackCooldownProgress(0.0f) >= 1.0f) && (!ModuleCriticals.shouldWaitForCrit() || raycastedEntity.velocity.lengthSquared() > 0.25 * 0.25) && (attackShielding || raycastedEntity !is PlayerEntity || player.mainHandStack.item !is AxeItem || !raycastedEntity.wouldBlockHit(
-        //             player
-        //         ))
-        //     }, cps)
-
-        //     repeat(clicks) {
-        //         if (simulateInventoryClosing && isInInventoryScreen) {
-        //             network.sendPacket(CloseHandledScreenC2SPacket(0))
-        //         }
-
-        //         val blocking = player.isBlocking
-        //         // if((blocking && !whileBlocking.enabled) || (player.isUsingItem()) && !whileUsingItem){
-        //         //     return@repeat
-        //         // }
-
-        //         if(blocking){
-        //             if(!whileBlocking.enabled){
-        //                 return@repeat
-        //             }
-        //         } else if(player.isUsingItem() && !whileUsingItem){
-        //             return@repeat
-        //         }
-
-
-        //         // Make sure to unblock now
-        //         if (blocking) {
-        //             network.sendPacket(
-        //                 PlayerActionC2SPacket(
-        //                     PlayerActionC2SPacket.Action.RELEASE_USE_ITEM, BlockPos.ORIGIN, Direction.DOWN
-        //                 )
-        //             )
-
-        //             // Wait until the un-blocking delay time is up
-        //             if (whileBlocking.blockingTicks > 0) {
-        //                 mc.options.useKey.isPressed = false
-        //                 wait(whileBlocking.blockingTicks)
-        //             }
-        //         }
-        //         // Fail rate
-        //         if (failRate > 0 && failRate > Random.nextInt(100)) {
-        //             // Fail rate should always make sure to swing the hand, so the server-side knows you missed the enemy.
-        //             if (swing) {
-        //                 player.swingHand(Hand.MAIN_HAND)
-        //             } else {
-        //                 network.sendPacket(HandSwingC2SPacket(Hand.MAIN_HAND))
-        //             }
-
-        //             // todo: might notify client-user about fail hit
-        //         } else {
-        //             // Attack enemy
-        //             attackEntity(raycastedEntity)
-        //         }
-
-        //         // Make sure to block again
-        //         if (blocking) {
-        //             // Wait until the blocking delay time is up
-        //             if (whileBlocking.blockingTicks > 0) {
-        //                 wait(whileBlocking.blockingTicks)
-        //             }
-
-        //             interaction.sendSequencedPacket(world) { sequence ->
-        //                 PlayerInteractItemC2SPacket(player.activeHand, sequence)
-        //             }
-        //             mc.options.useKey.isPressed = true
-
-        //             if (simulateInventoryClosing && isInInventoryScreen) {
-        //                 openInventorySilently()
-        //             }
-
-        //         }
-        //     }
-        // }
     }
     private fun swing(clientSide: Boolean) {
         if(clientSide) {
@@ -391,7 +305,7 @@ object ModulePlaceAttack : Module("PlaceAttack", Category.COMBAT) {
                 floor(targetpos.z).toInt()
             )
 
-            if(blocks.contains(targetBPos?.getState()?.block) || (Vec3d.ofCenter(targetBPos).distanceTo(player.pos) < 1)){
+            if(blocks.contains(targetBPos?.getState()?.block) || (Vec3d.ofCenter(targetBPos).distanceTo(player.pos) < 1 && !self)){
                 continue
             }
             targetBlockPos = targetBPos
