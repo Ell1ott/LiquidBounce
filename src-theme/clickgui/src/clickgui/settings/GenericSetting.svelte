@@ -7,6 +7,7 @@
     import ChooseSetting from "./ChooseSetting.svelte";
     import ChoiceSetting from "./ChoiceSetting.svelte";
     import ConfigurableSetting from "./ConfigurableSetting.svelte";
+    import TextArraySetting from "./TextArraySetting.svelte";
 
     export let instance;
 
@@ -27,4 +28,6 @@
     <ConfigurableSetting {instance} />
 {:else if type === "TEXT"}
     <TextSetting {instance} />
+{:else if type === "TEXT_ARRAY"}
+    <TextArraySetting {instance} />
 {/if}
