@@ -99,6 +99,8 @@ object ModuleCriticals : Module("Criticals", Category.COMBAT) {
 
         val optimizeForCooldown by boolean("OptimizeForCooldown", true)
 
+        val preventSuperJump by boolean("PreventSuperJump", true)
+
         val tickHandler = handler<PlayerTickEvent> {
             if (!ActiveOption.enabled) return@handler
 
@@ -115,6 +117,9 @@ object ModuleCriticals : Module("Criticals", Category.COMBAT) {
             if (player.isOnGround) {
                 // Simulate player jumping and send jump stat increment
                 player.jump()
+                if(preventSuperJump){
+                    player.jumpingCooldown = 10
+                }
                 // Jump upwards specific height, increment not needed because it has already been sent by jump function
                 player.upwards(height, increment = false)
             }
