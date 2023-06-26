@@ -122,7 +122,7 @@ fun facingEnemy(enemy: Entity, rotation: Rotation, range: Double, wallsRange: Do
 fun facingBlock(eyes: Vec3d, vec3: Vec3d, blockPos: BlockPos, expectedSide: Direction? = null): Boolean {
     val searchedPos = mc.world?.raycast(
         RaycastContext(
-            eyes, vec3, RaycastContext.ShapeType.COLLIDER, RaycastContext.FluidHandling.NONE, mc.player
+            eyes, vec3, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, mc.player
         )
     ) ?: return false
 
