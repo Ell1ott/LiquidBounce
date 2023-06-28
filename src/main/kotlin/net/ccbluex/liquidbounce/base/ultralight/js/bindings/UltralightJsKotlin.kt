@@ -28,4 +28,8 @@ object UltralightJsKotlin {
 
     fun floatRange(from: Float, to: Float) = from..to
 
+    fun <T> asList(vararg input: T): List<T> {
+        return arrayListOf(*input)
+    }
+
 }
