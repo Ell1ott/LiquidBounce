@@ -2,22 +2,41 @@
     export let instance;
 
     let name = instance.getName();
-    let values = instance.get();
-    let hi = "hi"
-    function handleTextChange(e) {
-        instance.set(Java.to(values, "java.util.ArrayList"));
-        hi = Java
-        // instance.set(values)
+    let values = instance.get().toArray();
+    let key = "NONE"
+    function handleTextChange() {
+        instance.set(kotlin.asList(...values));
+    }
+
+    function addInput(index){
+        values.splice(index + 1, 0, "")
+        values = values
+    }
+
+    function handleKeyPress(event, index) {
+        
+        if (event.which === 13) { // checks if enter is pressed
+            addInput(index);
+            const nextInput = event.target.nextSibling;
+                if (nextInput) {
+                    nextInput.focus();
+                }
+            handleTextChange()
+        } else if (event.which === 8 && values[index] === "") {
+            values.splice(index, 1)
+            values = values
+            handleTextChange()
+        }
+        
     }
 </script>
 
 <div class="setting">
     <div class="name">{name}</div>
-    <p>{hi}</p>
-    <p>{Object.prototype.toString.apply(values)}</p>
-    <!-- {#each values as value}
-         <input type="text" bind:value={value} on:change={handleTextChange} placeholder={name} />
-    {/each} -->
+    <div class="name">{key}</div>
+    {#each values as value, index}
+         <input type="text" bind:value={values[index]} on:change={handleTextChange} on:keydown={(e) => handleKeyPress(e, index)} placeholder={name} />
+    {/each}
     
 
     
