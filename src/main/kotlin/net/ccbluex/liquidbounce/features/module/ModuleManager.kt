@@ -82,6 +82,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModulePlaceAttack,
             ModulePerfectHit,
             ModuleSuperKnockback,
+            ModuleTickBase,
             ModuleTimerRange,
             ModuleTrigger,
             ModuleVelocity,
@@ -213,7 +214,8 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleNoSlowBreak,
             ModuleProjectilePuncher,
             ModuleScaffold,
-            ModuleTimer
+            ModuleTimer,
+            ModuleClickRecorder
         )
 
         builtin.apply {
