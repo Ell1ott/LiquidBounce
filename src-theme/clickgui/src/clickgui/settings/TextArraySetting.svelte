@@ -22,7 +22,7 @@
                     nextInput.focus();
                 }
             handleTextChange()
-        } else if (event.which === 8 && values[index] === "") {
+        } else if (event.which === 8 && values[index] === "") { // checks if backspace key is pressed and if the current field is empty
             values.splice(index, 1)
             values = values
             handleTextChange()
