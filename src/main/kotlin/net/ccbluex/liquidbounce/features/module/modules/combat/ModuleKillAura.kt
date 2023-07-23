@@ -109,9 +109,6 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
         tree(WhileBlocking)
     }
 
-    init {
-        tree(whileBlocking)
-    }
     private val raycast by enumChoice("Raycast", TRACE_ALL, values())
 
     private val failRate by int("FailRate", 0, 0..100)
@@ -286,15 +283,6 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
                 // if((blocking && !whileBlocking.enabled) || (player.isUsingItem()) && !whileUsingItem){
                 //     return@repeat
                 // }
-
-                if(blocking){
-                    if(!whileBlocking.enabled){
-                        return@repeat
-                    }
-                } else if(player.isUsingItem() && !whileUsingItem){
-                    return@repeat
-                }
-
 
                 if (blocking) {
                     if (!WhileBlocking.enabled) {
