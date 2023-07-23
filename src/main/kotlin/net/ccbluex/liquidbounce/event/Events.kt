@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2022 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.option.KeyBinding
 import net.minecraft.client.util.InputUtil
+import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.entity.Entity
 import net.minecraft.entity.MovementType
 import net.minecraft.network.packet.Packet
@@ -57,6 +58,9 @@ class WorldDisconnectEvent : Event()
 
 @Nameable("gameRender")
 class GameRenderEvent : Event()
+
+@Nameable("worldRender")
+class WorldRenderEvent(val matrixStack: MatrixStack, val partialTicks: Float) : Event()
 
 @Nameable("engineRender")
 class EngineRenderEvent(val tickDelta: Float) : Event()

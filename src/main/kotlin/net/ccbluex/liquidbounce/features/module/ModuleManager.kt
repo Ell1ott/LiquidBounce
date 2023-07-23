@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -116,6 +116,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
 
             // Misc
             ModuleAntiBot,
+            ModuleClickRecorder,
             ModuleFriendClicker,
             ModuleKeepChatAfterDeath,
             ModuleNameProtect,
@@ -155,6 +156,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
 
             // Player
             ModuleAntiAFK,
+            ModuleAntiExploit,
             ModuleAutoBreak,
             ModuleAutoFish,
             ModuleAutoRespawn,
@@ -186,7 +188,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleItemESP,
             ModuleMobOwners,
             ModuleMurderMystery,
-            ModuleNametags,
+            // ModuleNametags,
             ModuleNoBob,
             ModuleNoFov,
             ModuleNoHurtCam,
@@ -197,7 +199,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleQuickPerspectiveSwap,
             ModuleRotations,
             ModuleStorageESP,
-            ModuleTraces,
+            ModuleTracers,
             ModuleTrajectories,
             ModuleTrueSight,
             ModuleXRay,
@@ -214,8 +216,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleNoSlowBreak,
             ModuleProjectilePuncher,
             ModuleScaffold,
-            ModuleTimer,
-            ModuleClickRecorder
+            ModuleTimer
         )
 
         builtin.apply {

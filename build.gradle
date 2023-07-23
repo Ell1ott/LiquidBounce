@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2022 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ plugins {
     id "fabric-loom"
     id "org.jetbrains.kotlin.jvm"
     id "com.github.johnrengelman.shadow" version "7.1.2"
-    id "org.jlleitschuh.gradle.ktlint" version "11.4.0"
+    id "org.jlleitschuh.gradle.ktlint" version "11.5.0"
 }
 
 ktlint {
@@ -115,14 +115,25 @@ dependencies {
 processResources {
     inputs.property "version", project.version
 
+    inputs.property "minecraft_version", minecraft_version
+    inputs.property "fabric_version", fabric_version
+    inputs.property "loader_version", loader_version
+    inputs.property "fabric_kotlin_version", fabric_kotlin_version
+
     filesMatching("fabric.mod.json") {
-        expand "version": project.version
+        expand([
+                version: project.version,
+                minecraft_version: minecraft_version,
+                fabric_version: fabric_version,
+                loader_version: loader_version,
+                fabric_kotlin_version: fabric_kotlin_version
+        ])
     }
 }
 
 // The following code will include the theme into the build
 
-task makeTheme(type: Exec) {
+tasks.register('makeTheme', Exec) {
     workingDir file("src-theme")
     commandLine "python", "build.py"
     doLast {
@@ -154,7 +165,7 @@ tasks.withType(JavaCompile).configureEach {
     it.options.release = 17
 }
 
-tasks.withType(Test) {
+tasks.withType(Test).configureEach {
     useJUnitPlatform()
 }
 
@@ -201,7 +212,7 @@ remapJar {
     inputFile = shadowJar.archiveFile
 }
 
-task copyZipInclude(type: Copy) {
+tasks.register('copyZipInclude', Copy) {
     from 'zip_include/'
     into 'build/libs/zip'
 }
