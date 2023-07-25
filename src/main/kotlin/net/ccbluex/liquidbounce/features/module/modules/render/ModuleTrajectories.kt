@@ -18,6 +18,7 @@
  */
 package net.ccbluex.liquidbounce.features.module.modules.render
 
+import net.ccbluex.liquidbounce.event.MovementInputEvent
 import net.ccbluex.liquidbounce.event.WorldRenderEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
@@ -27,6 +28,8 @@ import net.ccbluex.liquidbounce.render.engine.Color4b
 import net.ccbluex.liquidbounce.render.engine.Vec3
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
 import net.ccbluex.liquidbounce.utils.block.getState
+import net.ccbluex.liquidbounce.utils.client.chat
+import net.ccbluex.liquidbounce.utils.entity.SimulatedPlayer
 import net.ccbluex.liquidbounce.utils.entity.box
 import net.ccbluex.liquidbounce.utils.entity.interpolateCurrentPosition
 import net.ccbluex.liquidbounce.utils.extensions.toRadians
@@ -42,6 +45,7 @@ import net.minecraft.util.hit.EntityHitResult
 import net.minecraft.util.hit.HitResult
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
+import net.minecraft.util.math.Direction
 import net.minecraft.util.math.Vec3d
 import net.minecraft.world.RaycastContext
 import kotlin.math.cos
@@ -63,6 +67,7 @@ object ModuleTrajectories : Module("Trajectories", Category.RENDER) {
 
     val renderHandler = handler<WorldRenderEvent> { event ->
         val matrixStack = event.matrixStack
+        drawPredictedPlayer(matrixStack)
 
         world.entities.filter { it is ArrowEntity && !it.inGround }.forEach {
             val landingPosition = drawTrajectoryForProjectile(
@@ -320,6 +325,25 @@ object ModuleTrajectories : Module("Trajectories", Category.RENDER) {
         }
 
         return landingPosition
+    }
+
+    var simulatedPlayerPoints = mutableListOf<Vec3>()
+
+    val tickRep = handler<MovementInputEvent> { event ->
+        val simulatedPlayer = SimulatedPlayer.fromPlayer(player, SimulatedPlayer.SimulatedPlayerInput(event.forwards, event.backwards, event.left, event.right, player.input.jumping, player.isSprinting))
+        simulatedPlayerPoints.clear()
+        for (i in 0..100){
+
+            simulatedPlayer.tick()
+            simulatedPlayerPoints += Vec3(simulatedPlayer.pos)
+//            chat(simulatedPlayer.velocity.toString())
+        }
+    }
+    private fun drawPredictedPlayer( matrixStack: MatrixStack) {
+        renderEnvironment(matrixStack) {
+            drawLineStrip(*simulatedPlayerPoints.toTypedArray())
+
+        }
     }
 
     private fun getTrajectoryInfo(player: PlayerEntity, item: Item): TrajectoryInfo? {
