@@ -205,6 +205,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleXRay,
 
             // World
+            ModuleAutoDisable,
             ModuleAutoFarm,
             ModuleAutoTool,
             ModuleChestAura,
