@@ -49,10 +49,7 @@ fun renderEnvironment(matrixStack: MatrixStack, draw: RenderEnvironment.() -> Un
     val cameraPosition = camera.pos
 
     RenderSystem.enableBlend()
-
-//    RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA)
-
-
+    RenderSystem.blendFunc(GlStateManager.SrcFactor.SRC_ALPHA, GlStateManager.DstFactor.ONE_MINUS_SRC_ALPHA)
     RenderSystem.disableDepthTest()
 
     matrixStack.push()
@@ -65,7 +62,7 @@ fun renderEnvironment(matrixStack: MatrixStack, draw: RenderEnvironment.() -> Un
 
     matrixStack.pop()
 
-//
+    RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
     RenderSystem.disableBlend()
     RenderSystem.enableDepthTest()
 }
@@ -92,7 +89,9 @@ fun RenderEnvironment.withPosition(pos: Vec3, draw: RenderEnvironment.() -> Unit
  * @param draw The block of code to be executed in the transformed environment.
  */
 fun RenderEnvironment.withColor(color4b: Color4b, draw: RenderEnvironment.() -> Unit) {
+    RenderSystem.setShaderColor(color4b.r / 255f, color4b.g / 255f, color4b.b / 255f, color4b.a / 255f)
     draw()
+    RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
 }
 
 /**
@@ -130,11 +129,11 @@ private fun RenderEnvironment.drawLines(vararg lines: Vec3, mode: DrawMode = Dra
     // Draw the vertices of the box
     with(bufferBuilder) {
         // Begin drawing lines with position format
-        begin(mode, VertexFormats.POSITION_COLOR)
+        begin(mode, VertexFormats.POSITION)
 
         // Draw the vertices of the box
         lines.forEach { (x, y, z) ->
-            vertex(matrix, x, y, z).color(1f, 1f, 1f, .5f).next()
+            vertex(matrix, x, y, z).next()
         }
     }
 
@@ -156,11 +155,10 @@ fun RenderEnvironment.drawSideBox(box: Box, side: Direction) {
     // Set the shader to the position program
     RenderSystem.setShader { GameRenderer.getPositionProgram() }
 
-
     // Draw the vertices of the box
     with(bufferBuilder) {
         // Begin drawing lines with position format
-        begin(DrawMode.QUADS, VertexFormats.POSITION_COLOR)
+        begin(DrawMode.QUADS, VertexFormats.POSITION)
 
         // Draw the vertices of the box
         val vertices = when (side) {
@@ -202,17 +200,9 @@ fun RenderEnvironment.drawSideBox(box: Box, side: Direction) {
             )
         }
 
-//        vertices.forEach { (x, y, z) ->
-//            vertex(matrix, x, y, z).next()
-//        }
-        RenderSystem.defaultBlendFunc();
-
-
-
-        vertex(matrix, vertices[0].x, vertices[0].y, vertices[0].z).color(0, 0, 255, 100).next()
-        vertex(matrix, vertices[1].x, vertices[1].y, vertices[1].z).color(0, 0, 255, 100).next()
-        vertex(matrix, vertices[2].x, vertices[2].y, vertices[2].z).color(0, 255, 0, 100).next()
-        vertex(matrix, vertices[3].x, vertices[3].y, vertices[3].z).color(0, 255, 0, 100).next()
+        vertices.forEach { (x, y, z) ->
+            vertex(matrix, x, y, z).next()
+        }
     }
 
     // Draw the outlined box
@@ -235,7 +225,7 @@ fun RenderEnvironment.drawOutlinedBox(box: Box) {
     // Draw the vertices of the box
     with(bufferBuilder) {
         // Begin drawing lines with position format
-        begin(DrawMode.DEBUG_LINES, VertexFormats.POSITION_COLOR)
+        begin(DrawMode.DEBUG_LINES, VertexFormats.POSITION)
 
         // Draw the vertices of the box
         val vertices = listOf(
@@ -266,7 +256,7 @@ fun RenderEnvironment.drawOutlinedBox(box: Box) {
         )
 
         vertices.forEach { (x, y, z) ->
-            vertex(matrix, x, y, z).color(1f, 1f, 1f, .5f).next()
+            vertex(matrix, x, y, z).next()
         }
     }
 
@@ -291,7 +281,7 @@ fun RenderEnvironment.drawSolidBox(box: Box) {
 
     with(bufferBuilder) {
         // Begin drawing lines with position format
-        begin(DrawMode.QUADS, VertexFormats.POSITION_COLOR)
+        begin(DrawMode.QUADS, VertexFormats.POSITION)
 
         // Draw the vertices of the box
         val vertices = listOf(
@@ -322,7 +312,7 @@ fun RenderEnvironment.drawSolidBox(box: Box) {
         )
 
         vertices.forEach { (x, y, z) ->
-            vertex(matrix, x, y, z).color(1f, 1f, 1f, .5f).next()
+            vertex(matrix, x, y, z).next()
         }
     }
 
