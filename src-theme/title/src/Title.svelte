@@ -64,17 +64,13 @@
     function browseWebsite() {
         utils.browse("https://liquidbounce.net");
     }
-    
-    const client = typeof client !== 'undefined' ? client : null;
-    const username = client?.getSessionService().getUsername() ?? "username";
-    const faceUrl = client?.getSessionService().getFaceUrl() ?? "url";
-    const accountType = client?.getSessionService().getAccountType() ?? "cracked";
-    const location = client?.getSessionService().getLocation() ?? "Germany";
-    
-    const updateAvailable = client?.isUpdateAvailable() ?? false;
 
-    
-    
+    const username = client.getSessionService().getUsername();
+    const faceUrl = client.getSessionService().getFaceUrl();
+    const accountType = client.getSessionService().getAccountType();
+    const location = client.getSessionService().getLocation();
+
+    const updateAvailable = client.isUpdateAvailable();
 </script>
 
 <main>
