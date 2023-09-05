@@ -25,6 +25,7 @@ import net.ccbluex.liquidbounce.config.ToggleableConfigurable
 import net.ccbluex.liquidbounce.event.*
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
+import net.ccbluex.liquidbounce.features.module.modules.player.ModuleChestStealer
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.AimMode.*
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Eagle.blocksToEagle
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Eagle.edgeDistance
@@ -78,7 +79,7 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
     }
 
     private val silent by boolean("Silent", true)
-    private var delay by intRange("Delay", 3..5, 0..40)
+    private var CPS by intRange("CPS", 15..18, 1..40)
 
     private val swing by boolean("Swing", true)
 
@@ -200,17 +201,22 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
         }
         mc.timer.timerSpeed = timer
     }
+    private val waitTimer = Chronometer() // is needed to use ms as delay
 
-    val networkTickHandler = repeatable {
-        val target = currentTarget ?: return@repeatable
-        val currentRotation = RotationManager.currentRotation ?: return@repeatable
-        val rayTraceResult = raycast(4.5, currentRotation) ?: return@repeatable
+
+    val renderEvent = handler<PlayerMoveEvent> {
+        if (!waitTimer.hasElapsed()) {
+            return@handler
+        }
+        val target = currentTarget ?: return@handler
+        val currentRotation = RotationManager.currentRotation ?: return@handler
+        val rayTraceResult = raycast(4.5, currentRotation) ?: return@handler
 
         if (rayTraceResult.type != HitResult.Type.BLOCK || rayTraceResult.blockPos != target.blockPos || rayTraceResult.side != target.direction || rayTraceResult.pos.y < target.minY || !isValidTarget(
                 rayTraceResult
             )
         ) {
-            return@repeatable
+            return@handler
         }
 
         var hasBlockInMainHand = isValidBlock(player.inventory.getStack(player.inventory.selectedSlot), target)
@@ -245,7 +251,7 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
         }
 
         if (!hasBlockInMainHand && (!hasBlockInOffHand && !canUseOffHand(player.inventory.mainHandStack))) {
-            return@repeatable
+            return@handler
         }
 
         // no need for additional checks
@@ -268,7 +274,8 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
             }
 
             currentTarget = null
-            wait(delay.random())
+//            wait(delay.random())
+            waitTimer.waitFor(1000 / CPS.random().toLong())
         }
     }
 

@@ -74,7 +74,11 @@
 
 <div class="setting animation-fix">
     <div class="name">{name}</div>
-    <div class="value">{valueString}</div>
+    {#if multi}
+        <div class="value">{valueString}</div>
+    {:else}
+        <input on:change={slider.noUiSlider.set([this.value])} class="value" id="inputElem" value={valueString}>
+    {/if}
     <div bind:this={slider} class="slider"/>
 </div>
 
