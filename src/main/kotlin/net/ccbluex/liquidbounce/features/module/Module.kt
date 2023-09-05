@@ -90,7 +90,7 @@ open class Module(
         }.onFailure {
             // Log error
             logger.error("Module failed to ${if (new) "enable" else "disable"}.", it)
-            // In case of an error module should stay disabled
+            // In case of an error, module should stay disabled
             throw it
         }
 
