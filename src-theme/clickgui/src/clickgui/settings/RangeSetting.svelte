@@ -77,7 +77,7 @@
     {#if multi}
         <div class="value">{valueString}</div>
     {:else}
-        <input on:change={slider.noUiSlider.set([this.value])} class="value" id="inputElem" value={valueString}>
+        <input size="" on:change={slider.noUiSlider.set([this.value])} class="value" id="inputElem" value={valueString}>
     {/if}
     <div bind:this={slider} class="slider"/>
 </div>
@@ -114,5 +114,13 @@
         color: white;
         text-align: right;
         font-size: 12px;
+        background-color: transparent;
+        outline: none;
+        border: none;
+        width: 100%;
+        
+    }
+    .value:focus {
+            outline: none;
     }
 </style>
