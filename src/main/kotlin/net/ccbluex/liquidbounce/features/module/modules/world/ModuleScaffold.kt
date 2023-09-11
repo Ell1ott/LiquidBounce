@@ -30,6 +30,7 @@ import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Aim
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Eagle.blocksToEagle
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Eagle.edgeDistance
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Slow.slowSpeed
+import net.ccbluex.liquidbounce.render.engine.Vec3
 import net.ccbluex.liquidbounce.utils.aiming.Rotation
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
 import net.ccbluex.liquidbounce.utils.aiming.RotationsConfigurable
@@ -39,6 +40,7 @@ import net.ccbluex.liquidbounce.utils.block.getState
 import net.ccbluex.liquidbounce.utils.client.*
 import net.ccbluex.liquidbounce.utils.entity.eyes
 import net.ccbluex.liquidbounce.utils.entity.isCloseToEdge
+import net.ccbluex.liquidbounce.utils.entity.rotation
 import net.ccbluex.liquidbounce.utils.entity.strafe
 import net.ccbluex.liquidbounce.utils.extensions.getFace
 import net.ccbluex.liquidbounce.utils.item.notABlock
@@ -50,6 +52,7 @@ import net.minecraft.block.ShapeContext
 import net.minecraft.block.SideShapeType
 import net.minecraft.block.SlabBlock
 import net.minecraft.block.StairsBlock
+import net.minecraft.client.input.Input
 import net.minecraft.client.option.KeyBinding
 import net.minecraft.item.BlockItem
 import net.minecraft.item.ItemPlacementContext
@@ -75,7 +78,8 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
         CENTER("Center"),
         RANDOM("Random"),
         STABILIZED("Stabilized"),
-        CLOSE_ROTATION("CloseRotation");
+        CLOSE_ROTATION("CloseRotation"),
+        GODBRIDGE("GodBridge")
     }
 
     private val silent by boolean("Silent", true)
@@ -183,7 +187,13 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
             return@handler
         }
 
+
         currentTarget = updateTarget(getTargetedPosition())
+//        chat(Vec3d(player.input.movementSideways.toString(), 0, player.input.movementForward).rotateZ(
+//            RotationManager.serverRotation.yaw))
+//        chat(Vec3d(player.input.movementSideways.toDouble(), 0.0, player.input.movementForward.toDouble()).toString())
+
+
 
         val target = currentTarget ?: return@handler
 
@@ -208,13 +218,15 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
         if (!waitTimer.hasElapsed()) {
             return@handler
         }
+
+
         val target = currentTarget ?: return@handler
         val currentRotation = RotationManager.currentRotation ?: return@handler
         val rayTraceResult = raycast(4.5, currentRotation) ?: return@handler
 
-        if (rayTraceResult.type != HitResult.Type.BLOCK || rayTraceResult.blockPos != target.blockPos || rayTraceResult.side != target.direction || rayTraceResult.pos.y < target.minY || !isValidTarget(
+        if ((rayTraceResult.type != HitResult.Type.BLOCK) || (((rayTraceResult.blockPos != target.blockPos) || (rayTraceResult.side != target.direction) || (rayTraceResult.pos.y < target.minY) || !isValidTarget(
                 rayTraceResult
-            )
+            )) && (aimMode.value != GODBRIDGE || rayTraceResult.blockPos.offset(rayTraceResult.side).y + 0.9 > player.y))
         ) {
             return@handler
         }
@@ -545,6 +557,10 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
                         STABILIZED -> {
                             face.stabilized(currPos)
                         }
+
+                        GODBRIDGE -> {
+                            face.center
+                        }
                     }
                     Pair(
                         face,
@@ -561,9 +577,20 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
                         ).multiply(Vec3d.of(first.first.vector)).lengthSquared()
                     }.thenComparingDouble { it.second.y }
                 ) ?: continue
+                chat(RotationManager.makeRotation(face.second.add(Vec3d.of(currPos)), player.eyes).yaw.toString())
+                val rotation = if (aimMode.value == GODBRIDGE)
+                    Rotation(
+                        floor(
 
-                val rotation = RotationManager.makeRotation(face.second.add(Vec3d.of(currPos)), player.eyes)
+    //                                RotationManager.makeRotation(Vec3d.ZERO.subtract( Vec3d(player.input.movementSideways.toDouble(), 0.0, player.input.movementForward.toDouble()).rotateY(
+    //                                    RotationManager.serverRotation.yaw)
 
+                            RotationManager.makeRotation(face.second.add(Vec3d.of(currPos)), player.eyes).yaw
+                                / 90)
+                                * 90 + 45,
+                        75f)
+                    else RotationManager.makeRotation(face.second.add(Vec3d.of(currPos)), player.eyes)
+                player.pos.subtract(player.velocity)
                 return Target(
                     currPos,
                     first.first,
