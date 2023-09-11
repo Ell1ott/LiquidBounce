@@ -189,9 +189,6 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
 
 
         currentTarget = updateTarget(getTargetedPosition())
-//        chat(Vec3d(player.input.movementSideways.toString(), 0, player.input.movementForward).rotateZ(
-//            RotationManager.serverRotation.yaw))
-//        chat(Vec3d(player.input.movementSideways.toDouble(), 0.0, player.input.movementForward.toDouble()).toString())
 
 
 
@@ -577,7 +574,6 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
                         ).multiply(Vec3d.of(first.first.vector)).lengthSquared()
                     }.thenComparingDouble { it.second.y }
                 ) ?: continue
-                chat(RotationManager.makeRotation(face.second.add(Vec3d.of(currPos)), player.eyes).yaw.toString())
                 val rotation = if (aimMode.value == GODBRIDGE)
                     Rotation(
                         floor(
