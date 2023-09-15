@@ -50,16 +50,11 @@ object ModuleInventoryCleaner : Module("InventoryCleaner", Category.PLAYER) {
 
     val maxBlocks by int("MaxBlocks", 512, 0..3000)
     val maxArrows by int("MaxArrows", 256, 0..3000)
-<<<<<<< Updated upstream
-    val toolAsSword by boolean("ToolAsSword", true)
-
-=======
     val preferSwordAsweapon by boolean("PreferSwordAsWeapon", true)
     val armorconfigurable = ArmorConfigurable()
     init {
         tree(armorconfigurable)
     }
->>>>>>> Stashed changes
     val usefulItems = items(
         "UsefulItems", mutableListOf(
             Items.WATER_BUCKET,
