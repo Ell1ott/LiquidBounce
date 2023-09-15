@@ -1,5 +1,5 @@
 <script>
-    import { onMount } from "svelte";
+    import {onMount} from "svelte";
 
     export let instance;
 
@@ -19,6 +19,7 @@
     }
 
     let valueString;
+
     function updateValueString() {
         if (multi) {
             valueString = `${value[0]} - ${value[1]}`
@@ -26,6 +27,7 @@
             valueString = value[0].toString();
         }
     }
+
     updateValueString();
 
     let slider = null;
@@ -72,8 +74,17 @@
 
 <div class="setting animation-fix">
     <div class="name">{name}</div>
-    <div class="value">{valueString}</div>
-    <div bind:this={slider} class="slider" />
+    {#if multi}
+        <div class="value grid-area-b ">{valueString}</div>
+        <!-- <div class="grid-area-b multiValues">
+            <input size="" on:change={slider.noUiSlider.set([this.value], null)} class="value multi" value={value[0]}>
+            <div class="value">-</div>
+            <input size="" on:change={slider.noUiSlider.set(null, [this.value])} class="value multi" value={value[1]}>
+        </div> -->
+    {:else}
+        <input size="" on:change={slider.noUiSlider.set([this.value])} class="value grid-area-b single" id="inputElem" value={valueString}>
+    {/if}
+    <div bind:this={slider} class="slider"/>
 </div>
 
 <style>
@@ -103,10 +114,32 @@
     }
 
     .value {
-        grid-area: b;
         font-weight: 500;
         color: white;
         text-align: right;
         font-size: 12px;
+        background-color: transparent;
+        outline: none;
+        border: none;
+        
+    }
+
+    .single {
+        width: 100%;
+
+    }
+    .multi {
+        width: 30px;
+    }
+    .value:focus {
+            outline: none;
+    }
+
+    .grid-area-b {
+        grid-area: b;
+    }
+
+    .multiValues {
+        display: flex;
     }
 </style>

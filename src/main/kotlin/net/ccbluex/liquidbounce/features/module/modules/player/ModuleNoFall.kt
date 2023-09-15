@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2022 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ import net.ccbluex.liquidbounce.utils.aiming.raycast
 import net.ccbluex.liquidbounce.utils.block.getBlock
 import net.ccbluex.liquidbounce.utils.client.SilentHotbar
 import net.ccbluex.liquidbounce.utils.entity.FallingPlayer
+import net.ccbluex.liquidbounce.utils.math.minus
 import net.minecraft.block.Blocks
 import net.minecraft.item.Item
 import net.minecraft.item.Items
@@ -153,7 +154,7 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
 
             val target = currentTarget ?: return@handler
 
-            pos = target.facepos
+            pos = target.blockPos.toCenterPos()
             RotationManager.aimAt(target.rotation, configurable = rotationsConfigurable)
         }
 

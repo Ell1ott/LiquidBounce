@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,8 +39,8 @@ import kotlin.math.sqrt
 class SimulatedPlayer(
     private val player: PlayerEntity,
     var input: SimulatedPlayerInput,
-    var pos: Vec3d,
-    private var velocity: Vec3d,
+    override var pos: Vec3d,
+    var velocity: Vec3d,
     private val yaw: Float,
     private val pitch: Float,
     private var sprinting: Boolean,
@@ -51,7 +51,7 @@ class SimulatedPlayer(
     private var onGround: Boolean,
     private var horizontalCollision: Boolean,
     private var verticalCollision: Boolean
-) {
+) : PlayerSimulation {
     companion object {
         fun fromPlayer(player: PlayerEntity, input: SimulatedPlayerInput): SimulatedPlayer {
             return SimulatedPlayer(
@@ -74,9 +74,13 @@ class SimulatedPlayer(
         }
     }
 
+    init {
+        input.update()
+    }
+
     private var simulatedTicks: Int = 0
 
-    fun tick() {
+    override fun tick() {
         // LivingEntity.tickMovement()
         if (this.jumpingCooldown > 0) {
             this.jumpingCooldown--
@@ -220,6 +224,7 @@ class SimulatedPlayer(
             val f = if (onGround) vec3d3 * 0.91f else 0.91f
             val g: Vec3d = this.applyMovementInput(movementInput, vec3d3)
 
+
             //            if (hasStatusEffect(StatusEffects.LEVITATION)) {
 //                h += (0.05 * (this.getStatusEffect(StatusEffects.LEVITATION).getAmplifier() + 1).toDouble() - g.y) * 0.2
 //                this.onLanding()
@@ -295,6 +300,7 @@ class SimulatedPlayer(
 
     private fun adjustMovementForCollisions(movement: Vec3d): Vec3d {
         val bl4: Boolean
+        // creating bounding box of player
         val box: Box = Box(-0.3, 0.0, -0.3, 0.3, 1.8, 0.3).offset(this.pos)
 
         val entityCollisionList = emptyList<VoxelShape>()

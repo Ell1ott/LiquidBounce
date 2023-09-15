@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import net.minecraft.client.network.ClientPlayerEntity
 import net.minecraft.entity.Entity
 import net.minecraft.entity.effect.StatusEffect
 import net.minecraft.entity.effect.StatusEffects
+import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.hit.HitResult
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Direction
@@ -124,6 +125,41 @@ class FallingPlayer(
         return instance.duration >= this.simulatedTicks
     }
 
+    fun predictPosition(ticks: Int): Vec3d?{
+        val rotationVec = player.rotationVector
+
+        for (i in 0 until ticks) {
+            val start = Vec3d(x, y, z)
+
+            calculateForTick(rotationVec)
+
+            val end = Vec3d(x, y, z)
+
+            var raytraceBlock: BlockPos?
+            if(raytracePlayer(start, end).also { raytraceBlock = it?.blockPos } != null) {
+                y = start.y
+                motionY= 0.0
+
+            }
+        }
+        return null
+    }
+    fun raytracePlayer(start: Vec3d, end: Vec3d): BlockHitResult?{
+        var blockHit: BlockHitResult?
+        val w = player.width / 2.0
+
+        if (rayTrace(start, end).also { blockHit = it } != null) return blockHit
+        if (rayTrace(start.add(w, 0.0, w), end).also { blockHit = it } != null) return blockHit
+        if (rayTrace(start.add(-w, 0.0, w), end).also { blockHit = it } != null) return blockHit
+        if (rayTrace(start.add(w, 0.0, -w), end).also { blockHit = it } != null) return blockHit
+        if (rayTrace(start.add(-w, 0.0, -w), end).also { blockHit = it } != null) return blockHit
+        if (rayTrace(start.add(w, 0.0, w / 2f), end).also {blockHit = it } != null) return blockHit
+        if (rayTrace(start.add(-w, 0.0, w / 2f), end).also {blockHit = it } != null) return blockHit
+        if (rayTrace(start.add(w / 2f, 0.0, w), end).also {blockHit = it } != null) return blockHit
+        if (rayTrace(start.add(w / 2f, 0.0, -w), end).also { blockHit = it } != null) return blockHit
+        return null
+    }
+
     fun findCollision(ticks: Int): CollisionResult? {
         val rotationVec = player.rotationVector
 
@@ -133,47 +169,14 @@ class FallingPlayer(
             calculateForTick(rotationVec)
 
             val end = Vec3d(x, y, z)
-            var raytracedBlock: BlockPos?
-            val w = player.width / 2.0
 
-            if (rayTrace(start, end).also { raytracedBlock = it } != null) return CollisionResult(raytracedBlock, i)
-            if (rayTrace(start.add(w, 0.0, w), end).also { raytracedBlock = it } != null) return CollisionResult(
-                raytracedBlock,
-                i
-            )
-            if (rayTrace(start.add(-w, 0.0, w), end).also { raytracedBlock = it } != null) return CollisionResult(
-                raytracedBlock,
-                i
-            )
-            if (rayTrace(start.add(w, 0.0, -w), end).also { raytracedBlock = it } != null) return CollisionResult(
-                raytracedBlock,
-                i
-            )
-            if (rayTrace(start.add(-w, 0.0, -w), end).also { raytracedBlock = it } != null) return CollisionResult(
-                raytracedBlock,
-                i
-            )
-            if (rayTrace(start.add(w, 0.0, w / 2f), end).also {
-                raytracedBlock = it
-            } != null
-            ) return CollisionResult(raytracedBlock, i)
-            if (rayTrace(start.add(-w, 0.0, w / 2f), end).also {
-                raytracedBlock = it
-            } != null
-            ) return CollisionResult(raytracedBlock, i)
-            if (rayTrace(start.add(w / 2f, 0.0, w), end).also {
-                raytracedBlock = it
-            } != null
-            ) return CollisionResult(raytracedBlock, i)
-            if (rayTrace(start.add(w / 2f, 0.0, -w), end).also {
-                raytracedBlock = it
-            } != null
-            ) return CollisionResult(raytracedBlock, i)
+            var raytraceBlock: BlockPos?
+            if(raytracePlayer(start, end).also { raytraceBlock = it?.blockPos } != null) return CollisionResult(raytraceBlock, i)
         }
         return null
     }
 
-    private fun rayTrace(start: Vec3d, end: Vec3d): BlockPos? {
+    private fun rayTrace(start: Vec3d, end: Vec3d): BlockHitResult? {
         val result = mc.world!!.raycast(
             RaycastContext(
                 start,
@@ -185,7 +188,7 @@ class FallingPlayer(
         )
 
         return if (result != null && result.type == HitResult.Type.BLOCK && result.side == Direction.UP) {
-            result.blockPos
+            result
         } else null
     }
 

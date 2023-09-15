@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2022 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,7 +43,9 @@ import java.util.List;
 @Mixin(Window.class)
 public class MixinWindow {
 
-    @Shadow @Final private long handle;
+    @Shadow
+    @Final
+    private long handle;
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V"))
     private void hookOpenGl33(int hint, int value) {
@@ -57,9 +59,9 @@ public class MixinWindow {
     }
 
     /**
-     * Set window icon to our client icon.
+     * Set the window icon to our client icon.
      *
-     * @return
+     * @return modified game icon
      */
     @Redirect(method = "setIcon", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/util/Icons;getIcons(Lnet/minecraft/resource/ResourcePack;)Ljava/util/List;"))
     private List<InputSupplier<InputStream>> setupIcon(Icons instance, ResourcePack resourcePack) throws IOException {
@@ -69,7 +71,7 @@ public class MixinWindow {
         final InputStream stream16 = LiquidBounce.class.getResourceAsStream("/assets/liquidbounce/icon_16x16.png");
         final InputStream stream32 = LiquidBounce.class.getResourceAsStream("/assets/liquidbounce/icon_32x32.png");
 
-        // In case one of the icons are not found
+        // In case one of the icons was not found
         if (stream16 == null || stream32 == null) {
             LiquidBounce.INSTANCE.getLogger().error("Unable to find client icons.");
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2023 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -106,9 +106,7 @@ object ModuleAutoBow : Module("AutoBow", Category.COMBAT) {
                 }
             }
 
-            println(getChargedRandom())
-
-            if (player.itemUseTime < charged + getChargedRandom()) { // Wait until bow is fully charged
+            if (player.itemUseTime < charged + getChargedRandom()) { // Wait until the bow is fully charged
                 return@handler
             }
 
@@ -118,8 +116,8 @@ object ModuleAutoBow : Module("AutoBow", Category.COMBAT) {
         }
 
         fun getHypotheticalHit(): AbstractClientPlayerEntity? {
-            val yaw = player.yaw
-            val pitch = player.pitch
+            val yaw = RotationManager.serverRotation.yaw
+            val pitch = RotationManager.serverRotation.pitch
 
             val velocity = getHypotheticalArrowVelocity(player, false)
 
@@ -186,6 +184,7 @@ object ModuleAutoBow : Module("AutoBow", Category.COMBAT) {
         val rotationConfigurable = RotationsConfigurable()
 
         val predictSize by float("PredictionCofactor", 1.0f, 0.0f..1.5f)
+        val minExpedtedPull by int("MinExpedtedPull", 5, 0..20)
 
         init {
             tree(targetTracker)
@@ -220,8 +219,8 @@ object ModuleAutoBow : Module("AutoBow", Category.COMBAT) {
                 return@handler
             }
 
-            player.yaw = rotation.yaw
-            player.pitch = rotation.pitch
+//            player.yaw = rotation.yaw
+//            player.pitch = rotation.pitch
 
             RotationManager.aimAt(rotation, configurable = rotationConfigurable)
         }
@@ -357,7 +356,7 @@ object ModuleAutoBow : Module("AutoBow", Category.COMBAT) {
         player: ClientPlayerEntity,
         assumeElongated: Boolean
     ): Float {
-        var velocity: Float = if (assumeElongated) 1f else player.itemUseTime / 20f
+        var velocity: Float = if (assumeElongated) 1f else player.itemUseTime.coerceAtLeast(BowAimbotOptions.minExpedtedPull) / 20f
 
         velocity = (velocity * velocity + velocity * 2.0f) / 3.0f
 
@@ -386,7 +385,7 @@ object ModuleAutoBow : Module("AutoBow", Category.COMBAT) {
 
             // Should accelerated game ticks when using bow
             if (currentItem?.item is BowItem) {
-                repeat(packets) { // Send movement packet to simulate ticks (has been patched in 1.19)
+                repeat(packets) { // Send a movement packet to simulate ticks (has been patched in 1.19)
                     network.sendPacket(PlayerMoveC2SPacket.OnGroundOnly(true)) // Just show visual effect (not required to work - but looks better)
                     player.tickActiveItemStack()
                 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2022 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,9 @@ import net.ccbluex.liquidbounce.features.module.modules.render.ModuleXRay;
 import net.ccbluex.liquidbounce.render.engine.RenderingFlags;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.gui.screen.AccessibilityOnboardingScreen;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ServerInfo;
@@ -48,29 +50,15 @@ public abstract class MixinMinecraftClient {
 
     @Shadow
     @Nullable
-    public abstract ClientPlayNetworkHandler getNetworkHandler();
-
-    @Shadow
-    @Nullable
-    private IntegratedServer server;
-
-    @Shadow
-    public abstract boolean isConnectedToRealms();
-
-    @Shadow
-    private int itemUseCooldown;
-
-    @Shadow
-    @Nullable
     public ClientPlayerEntity player;
-
     @Shadow
     @Nullable
     public HitResult crosshairTarget;
-
-    @Shadow public abstract @org.jetbrains.annotations.Nullable ServerInfo getCurrentServerEntry();
-
-    @Shadow public abstract Window getWindow();
+    @Shadow
+    @Nullable
+    private IntegratedServer server;
+    @Shadow
+    private int itemUseCooldown;
 
     @Inject(method = "isAmbientOcclusionEnabled()Z", at = @At("HEAD"), cancellable = true)
     private static void injectXRayFullBright(CallbackInfoReturnable<Boolean> callback) {
@@ -82,6 +70,22 @@ public abstract class MixinMinecraftClient {
         callback.setReturnValue(false);
         callback.cancel();
     }
+
+    @Shadow
+    @Nullable
+    public abstract ClientPlayNetworkHandler getNetworkHandler();
+
+    @Shadow
+    public abstract boolean isConnectedToRealms();
+
+    @Shadow
+    public abstract @org.jetbrains.annotations.Nullable ServerInfo getCurrentServerEntry();
+
+    @Shadow
+    public abstract Window getWindow();
+
+    @Shadow
+    public abstract void setScreen(@org.jetbrains.annotations.Nullable Screen screen);
 
     /**
      * Entry point of our hacked client
@@ -115,11 +119,13 @@ public abstract class MixinMinecraftClient {
 
         final StringBuilder titleBuilder = new StringBuilder(LiquidBounce.CLIENT_NAME);
         titleBuilder.append(" v");
-        titleBuilder.append(LiquidBounce.CLIENT_VERSION);
+        titleBuilder.append(LiquidBounce.INSTANCE.getClientVersion());
 
         if (LiquidBounce.IN_DEVELOPMENT) {
-            titleBuilder.append(" (dev)");
+            titleBuilder.append(" (dev) ");
         }
+
+        titleBuilder.append(LiquidBounce.INSTANCE.getClientCommit());
 
         titleBuilder.append(" | ");
         titleBuilder.append(SharedConstants.getGameVersion().getName());
@@ -153,6 +159,11 @@ public abstract class MixinMinecraftClient {
         final ScreenEvent event = new ScreenEvent(screen);
         EventManager.INSTANCE.callEvent(event);
         if (event.isCancelled()) callbackInfo.cancel();
+        // Who need this GUI?
+        if (screen instanceof AccessibilityOnboardingScreen) {
+            callbackInfo.cancel();
+            this.setScreen(new TitleScreen(true));
+        }
     }
 
     /**

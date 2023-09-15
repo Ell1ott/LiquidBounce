@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2022 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,9 +69,11 @@ public abstract class MixinEntity {
     @Shadow
     public abstract boolean isOnGround();
 
-    @Shadow protected boolean submergedInWater;
+    @Shadow
+    protected boolean submergedInWater;
 
-    @Shadow public abstract boolean hasVehicle();
+    @Shadow
+    public abstract boolean hasVehicle();
 
     /**
      * Hook entity margin modification event
@@ -96,7 +98,6 @@ public abstract class MixinEntity {
 
     @Redirect(method = "updateVelocity", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/Entity;movementInputToVelocity(Lnet/minecraft/util/math/Vec3d;FF)Lnet/minecraft/util/math/Vec3d;"))
     public Vec3d hookVelocity(Vec3d movementInput, float speed, float yaw) {
-        //noinspection ConstantConditions
         if ((Object) this == MinecraftClient.getInstance().player) {
             final PlayerVelocityStrafe event = new PlayerVelocityStrafe(movementInput, speed, yaw, movementInputToVelocity(movementInput, speed, yaw));
             EventManager.INSTANCE.callEvent(event);

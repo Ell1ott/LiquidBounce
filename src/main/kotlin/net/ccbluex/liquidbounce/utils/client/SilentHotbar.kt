@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2022 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,7 +44,11 @@ object SilentHotbar : Listenable {
     val serversideSlot: Int
         get() = this.hotbarState?.enforcedHotbarSlot ?: mc.player!!.inventory.selectedSlot
 
-    fun selectSlotSilently(requester: Any?, slot: Int, ticksUntilReset: Int = 20) {
+    fun selectSlotSilently(requester: Any?, slot: Int, ticksUntilReset: Int = 20, forceTickUpdate: Boolean = false) {
+        if(forceTickUpdate && this.hotbarState != null){
+            this.ticksSinceLastUpdate = 0
+            this.hotbarState?.ticksUntilReset = ticksUntilReset
+        }
         val allowOverride = this.hotbarState == null || ticksSinceLastUpdate > 1
 
         if (!allowOverride) {

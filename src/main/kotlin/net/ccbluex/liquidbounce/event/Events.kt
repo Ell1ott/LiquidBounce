@@ -1,7 +1,7 @@
 /*
  * This file is part of LiquidBounce (https://github.com/CCBlueX/LiquidBounce)
  *
- * Copyright (c) 2016 - 2022 CCBlueX
+ * Copyright (c) 2015 - 2023 CCBlueX
  *
  * LiquidBounce is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ import net.minecraft.block.Block
 import net.minecraft.block.BlockState
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
+import net.minecraft.client.option.KeyBinding
 import net.minecraft.client.util.InputUtil
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.entity.Entity
@@ -57,6 +58,9 @@ class WorldDisconnectEvent : Event()
 
 @Nameable("gameRender")
 class GameRenderEvent : Event()
+
+@Nameable("worldRender")
+class WorldRenderEvent(val matrixStack: MatrixStack, val partialTicks: Float) : Event()
 
 @Nameable("engineRender")
 class EngineRenderEvent(val tickDelta: Float) : Event()
@@ -94,13 +98,16 @@ class KeyboardCharEvent(val window: Long, val codepoint: Int) : Event()
 class InputHandleEvent : Event()
 
 @Nameable("movementInputEvent")
-class MovementInputEvent(var forwards: Boolean, var backwards: Boolean, var left: Boolean, var right: Boolean) : Event()
+class MovementInputEvent(var forwards: Boolean, var backwards: Boolean, var left: Boolean, var right: Boolean, var jumping: Boolean) : Event()
 
 @Nameable("key")
 class KeyEvent(val key: InputUtil.Key, val action: Int, val mods: Int) : Event()
 
 @Nameable("mouseRotation")
 class MouseRotationEvent(var cursorDeltaX: Double, var cursorDeltaY: Double) : CancellableEvent()
+
+@Nameable("keyBinding")
+class KeyBindingEvent(var key: KeyBinding) : Event()
 
 // User action events
 
@@ -142,6 +149,12 @@ class BlockSlipperinessMultiplierEvent(val block: Block, var slipperiness: Float
 class EntityMarginEvent(val entity: Entity, var margin: Float) : Event()
 
 // Entity events bound to client-user entity
+
+@Nameable("HealthUpdate")
+class HealthUpdateEvent(health: Float, food: Int, saturation: Float) : Event()
+
+@Nameable("Death")
+class DeathEvent : Event()
 
 @Nameable("playerTick")
 class PlayerTickEvent : Event()
