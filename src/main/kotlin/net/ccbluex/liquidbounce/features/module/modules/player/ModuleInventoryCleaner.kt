@@ -50,8 +50,16 @@ object ModuleInventoryCleaner : Module("InventoryCleaner", Category.PLAYER) {
 
     val maxBlocks by int("MaxBlocks", 512, 0..3000)
     val maxArrows by int("MaxArrows", 256, 0..3000)
+<<<<<<< Updated upstream
     val toolAsSword by boolean("ToolAsSword", true)
 
+=======
+    val preferSwordAsweapon by boolean("PreferSwordAsWeapon", true)
+    val armorconfigurable = ArmorConfigurable()
+    init {
+        tree(armorconfigurable)
+    }
+>>>>>>> Stashed changes
     val usefulItems = items(
         "UsefulItems", mutableListOf(
             Items.WATER_BUCKET,
@@ -287,9 +295,7 @@ object ModuleInventoryCleaner : Module("InventoryCleaner", Category.PLAYER) {
                 is CrossbowItem -> WeightedCrossbowItem(stack, slotId)
                 is ArrowItem -> WeightedArrowItem(stack, slotId)
                 is ToolItem -> {
-                    if(toolAsSword){
-                        items.add(WeightedSwordItem(stack, slotId))
-                    }
+                    items.add(WeightedSwordItem(stack, slotId))
 
                     WeightedToolItem(stack, slotId)
                 }
@@ -399,7 +405,7 @@ class WeightedSwordItem(itemStack: ItemStack, slot: Int) : WeightedItem(itemStac
                     ) * 4.0f * 0.625f * 0.9f).compareTo(
                     o2.itemStack.item.attackDamage * (1.0f + DAMAGE_ESTIMATOR.estimateValue(
                         o2.itemStack
-                    ) + o2.itemStack.getEnchantment(Enchantments.FIRE_ASPECT) * 4.0f * 0.625f * 0.9f)
+                    ) + o2.itemStack.getEnchantment(Enchantments.FIRE_ASPECT) * 4.0f * 0.625f * 0.9f) + (if(preferSwordAsweapon) 100 else 0)
                 )
             },
             { o1, o2 ->
