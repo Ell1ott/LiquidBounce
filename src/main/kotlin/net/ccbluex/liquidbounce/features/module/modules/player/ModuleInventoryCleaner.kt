@@ -395,9 +395,11 @@ class WeightedSwordItem(itemStack: ItemStack, slot: Int) : WeightedItem(itemStac
             { o1, o2 ->
                 (
                     // TODO: Attack Speed
-                    o1.itemStack.item.attackDamage * (1.0f + DAMAGE_ESTIMATOR.estimateValue(o1.itemStack)) + o1.itemStack.getEnchantment(
+                    o1.itemStack.item.attackDamage * (1.0f + DAMAGE_ESTIMATOR.estimateValue(
+                        o1.itemStack
+                    )) * o1.itemStack.item.attack + o1.itemStack.getEnchantment(
                         Enchantments.FIRE_ASPECT
-                    ) * 4.0f * 0.625f * 0.9f).compareTo(
+                    ) * 4.0f * 0.625f * 0.9f +  + (if(preferSwordAsweapon) 100 else 0)).compareTo(
                     o2.itemStack.item.attackDamage * (1.0f + DAMAGE_ESTIMATOR.estimateValue(
                         o2.itemStack
                     ) + o2.itemStack.getEnchantment(Enchantments.FIRE_ASPECT) * 4.0f * 0.625f * 0.9f) + (if(preferSwordAsweapon) 100 else 0)
