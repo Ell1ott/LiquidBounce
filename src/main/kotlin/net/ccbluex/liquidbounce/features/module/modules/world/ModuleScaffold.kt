@@ -62,13 +62,13 @@ import kotlin.random.Random
  */
 object ModuleScaffold : Module("Scaffold", Category.WORLD) {
 
-    enum class AimMode(override val choiceName: String) : NamedChoice {
-        CENTER("Center"),
-        RANDOM("Random"),
-        STABILIZED("Stabilized"),
-        CLOSE_ROTATION("CloseRotation"),
-        GODBRIDGE("GodBridge")
-    }
+//    enum class AimMode(override val choiceName: String) : NamedChoice {
+//        CENTER("Center"),
+//        RANDOM("Random"),
+//        STABILIZED("Stabilized"),
+//        CLOSE_ROTATION("CloseRotation"),
+//        GODBRIDGE("GodBridge")
+//    }
 
     private val silent by boolean("Silent", true)
     private var CPS by intRange("CPS", 15..18, 1..40)
@@ -235,12 +235,9 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
 
         val target = currentTarget ?: return@handler
         val currentRotation = RotationManager.currentRotation ?: return@handler
-        val rayTraceResult = raycast(4.5, currentRotation) ?: return@handler
+        val currentCrosshairTarget = raycast(4.5, currentRotation) ?: return@handler
 
-        if ((rayTraceResult.type != HitResult.Type.BLOCK) || (((rayTraceResult.blockPos != target.blockPos) || (rayTraceResult.side != target.direction) || (rayTraceResult.pos.y < target.minY) || !isValidTarget(
-                rayTraceResult
-            )) && (aimMode.value != GODBRIDGE || rayTraceResult.blockPos.offset(rayTraceResult.side).y + 0.9 > player.y))
-        ) {
+        if (!target.doesCrosshairTargetFullfitRequirements(currentCrosshairTarget) || !isValidCrosshairTarget(currentCrosshairTarget)) {
             return@handler
         }
 
@@ -262,7 +259,7 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
             SilentHotbar.resetSlot(this)
         }
 
-        if (!hasBlockInMainHand && (!hasBlockInOffHand && !canUseOffHand(player.inventory.mainHandStack))) {
+        if (!hasBlockInMainHand && !hasBlockInOffHand) {
             return@handler
         }
 
@@ -275,7 +272,7 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
         )
 
         if (!result.isAccepted)
-            return@repeatable
+            return@handler
 
         if (Eagle.enabled) {
             placedBlocks += 1
