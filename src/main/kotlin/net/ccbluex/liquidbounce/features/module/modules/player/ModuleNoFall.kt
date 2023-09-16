@@ -26,12 +26,15 @@ import net.ccbluex.liquidbounce.event.*
 import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
-import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
 import net.ccbluex.liquidbounce.utils.aiming.RotationsConfigurable
 import net.ccbluex.liquidbounce.utils.entity.eyes
 import net.ccbluex.liquidbounce.utils.aiming.raycast
 import net.ccbluex.liquidbounce.utils.block.getBlock
+import net.ccbluex.liquidbounce.utils.block.targetFinding.BlockPlacementTarget
+import net.ccbluex.liquidbounce.utils.block.targetFinding.BlockPlacementTargetFindingOptions
+import net.ccbluex.liquidbounce.utils.block.targetFinding.CenterTargetPositionFactory
+import net.ccbluex.liquidbounce.utils.block.targetFinding.findBestBlockPlacementTarget
 import net.ccbluex.liquidbounce.utils.client.SilentHotbar
 import net.ccbluex.liquidbounce.utils.entity.FallingPlayer
 import net.ccbluex.liquidbounce.utils.math.minus
@@ -43,8 +46,7 @@ import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.hit.HitResult
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Vec3d
+import net.minecraft.util.math.Vec3i
 import kotlin.math.abs
 import kotlin.booleanArrayOf
 
@@ -118,7 +120,7 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
 
         val rotationsConfigurable = tree(RotationsConfigurable())
 
-        var currentTarget: ModuleScaffold.Target? = null
+        var currentTarget: BlockPlacementTarget? = null
 
         var waterplaced: Boolean = false
 
@@ -148,8 +150,13 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
                 return@handler
             }
 
+            val options = BlockPlacementTargetFindingOptions(
+                listOf(Vec3i(0, 0, 0)),
+                player.inventory.getStack(itemForMLG!!),
+                CenterTargetPositionFactory
+            )
 
-            currentTarget = ModuleScaffold.updateTarget(collision.up())
+            currentTarget = findBestBlockPlacementTarget(collision.up(), options)
 
 
             val target = currentTarget ?: return@handler
