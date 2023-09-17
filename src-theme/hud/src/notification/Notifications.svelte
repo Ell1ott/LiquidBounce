@@ -6,6 +6,9 @@
     let notifications = [];
 
     function addNotification(title, content, severity) {
+        if(["enabled", "disabled"].includes(severity.toString().toLowerCase())){
+            notifications = notifications.filter(n => n.content != content);
+        }
         const id = Date.now();
         notifications = [{id: id, title: title, content: content, severity: severity}, ...notifications];
         setTimeout(() => {
