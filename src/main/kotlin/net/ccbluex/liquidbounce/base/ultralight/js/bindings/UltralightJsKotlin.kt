@@ -19,6 +19,8 @@
 
 package net.ccbluex.liquidbounce.base.ultralight.js.bindings
 
+import net.ccbluex.liquidbounce.utils.client.chat
+
 /**
  * An easy way to create kotlin things in JS
  */
@@ -27,5 +29,9 @@ object UltralightJsKotlin {
     fun intRange(from: Int, to: Int) = from..to
 
     fun floatRange(from: Float, to: Float) = from..to
+
+    fun log(message: String){
+        chat(message)
+    }
 
 }
