@@ -227,7 +227,7 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
     private val waitTimer = Chronometer() // is needed to use ms as delay
 
 
-    val renderEvent = handler<PlayerMoveEvent> {
+    val MoveEvent = handler<PlayerMoveEvent> {
         if (!waitTimer.hasElapsed()) {
             return@handler
         }
