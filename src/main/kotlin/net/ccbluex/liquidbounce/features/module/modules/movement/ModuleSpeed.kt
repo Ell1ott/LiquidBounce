@@ -26,9 +26,11 @@ import net.ccbluex.liquidbounce.event.repeatable
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.features.module.modules.combat.ModuleCriticals
+import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.client.timer
 import net.ccbluex.liquidbounce.utils.entity.*
 import net.minecraft.entity.MovementType
+import net.minecraft.util.math.Vec3d
 
 /**
  * Speed module
@@ -109,13 +111,14 @@ object ModuleSpeed : Module("Speed", Category.MOVEMENT) {
             get() = modes
 
         private val optimizeForCriticals by boolean("OptimizeForCriticals", true)
+        private val checkForBlockAbove by boolean("CheckForBlockAbove", false)
 
         val repeatable = repeatable {
             if (optimizeForCriticals && ModuleCriticals.shouldWaitForJump(0.42f)) {
                 return@repeatable
             }
 
-            if (player.isOnGround && player.moving) {
+            if (player.isOnGround && player.moving && (!checkForBlockAbove || !world.getBlockCollisions(player, player.boundingBox.offset(Vec3d(0.0, 0.5, 0.0))).none())) {
                 player.jump()
             }
         }
