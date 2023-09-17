@@ -23,6 +23,7 @@ enum class AimMode(override val choiceName: String) : NamedChoice {
     CENTER("Center"),
     RANDOM("Random"),
     STABILIZED("Stabilized"),
+    GODBRIDGE("Godbridge")
 }
 
 class BlockPlacementTargetFindingOptions(
@@ -194,16 +195,10 @@ data class BlockPlacementTarget(
     val rotation: Rotation
 ) {
     fun doesCrosshairTargetFullfitRequirements(crosshairTarget: BlockHitResult): Boolean {
-        if (crosshairTarget.type != HitResult.Type.BLOCK)
-            return false
-        if (crosshairTarget.blockPos != this.blockPos)
-            return false
-        if (crosshairTarget.side != this.direction)
-            return false
-        if (crosshairTarget.pos.y < this.minPlacementY)
-            return false
-
-        return true
+        return !((crosshairTarget.type != HitResult.Type.BLOCK)
+                || (crosshairTarget.blockPos != this.blockPos)
+                || (crosshairTarget.side != this.direction)
+                || (crosshairTarget.pos.y < this.minPlacementY))
     }
 }
 

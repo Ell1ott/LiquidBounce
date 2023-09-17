@@ -27,6 +27,7 @@ import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Eagle.blocksToEagle
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Eagle.edgeDistance
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Slow.slowSpeed
+import net.ccbluex.liquidbounce.utils.aiming.Rotation
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
 import net.ccbluex.liquidbounce.utils.aiming.RotationsConfigurable
 import net.ccbluex.liquidbounce.utils.aiming.raycast
@@ -35,7 +36,6 @@ import net.ccbluex.liquidbounce.utils.block.targetFinding.*
 import net.ccbluex.liquidbounce.utils.client.*
 import net.ccbluex.liquidbounce.utils.entity.eyes
 import net.ccbluex.liquidbounce.utils.entity.isCloseToEdge
-import net.ccbluex.liquidbounce.utils.entity.rotation
 import net.ccbluex.liquidbounce.utils.entity.strafe
 import net.ccbluex.liquidbounce.utils.item.*
 import net.ccbluex.liquidbounce.utils.kotlin.toDouble
@@ -49,9 +49,11 @@ import net.minecraft.util.Hand
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Direction
+import net.minecraft.util.math.Vec3d
 import net.minecraft.util.math.Vec3i
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.floor
 import kotlin.math.sin
 import kotlin.random.Random
 
@@ -193,7 +195,8 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
         val target = currentTarget ?: return@handler
 
         RotationManager.aimAt(
-            target.rotation,
+            if (this.aimMode.get() == AimMode.GODBRIDGE)  Rotation(floor(RotationManager.makeRotation(target.blockPos.toCenterPos().offset(target.direction, 0.5), player.eyes).yaw / 90) * 90 + 45, 75f)
+        else target.rotation,
 
             openInventory = ignoreOpenInventory,
             configurable = rotationsConfigurable
@@ -212,6 +215,7 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
 
         return when (this.aimMode.get()) {
             AimMode.CENTER -> CenterTargetPositionFactory
+            AimMode.GODBRIDGE -> CenterTargetPositionFactory
             AimMode.RANDOM -> RandomTargetPositionFactory(config)
             AimMode.STABILIZED -> StabilizedTargetPositionFactory(config)
         }
@@ -227,18 +231,18 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
     private val waitTimer = Chronometer() // is needed to use ms as delay
 
 
-    val MoveEvent = handler<PlayerMoveEvent> {
+    val networkTickHandler = repeatable {
         if (!waitTimer.hasElapsed()) {
-            return@handler
+            return@repeatable
         }
 
 
-        val target = currentTarget ?: return@handler
-        val currentRotation = RotationManager.currentRotation ?: return@handler
-        val currentCrosshairTarget = raycast(4.5, currentRotation) ?: return@handler
+        val target = currentTarget ?: return@repeatable
+        val currentRotation = RotationManager.currentRotation ?: return@repeatable
+        val currentCrosshairTarget = raycast(4.5, currentRotation) ?: return@repeatable
 
         if (!target.doesCrosshairTargetFullfitRequirements(currentCrosshairTarget) || !isValidCrosshairTarget(currentCrosshairTarget)) {
-            return@handler
+            return@repeatable
         }
 
         var hasBlockInMainHand = isValidBlock(player.inventory.getStack(player.inventory.selectedSlot))
@@ -260,7 +264,7 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
         }
 
         if (!hasBlockInMainHand && !hasBlockInOffHand) {
-            return@handler
+            return@repeatable
         }
 
         // no need for additional checks
@@ -272,7 +276,7 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
         )
 
         if (!result.isAccepted)
-            return@handler
+            return@repeatable
 
         if (Eagle.enabled) {
             placedBlocks += 1
@@ -332,7 +336,7 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
     val repeatable = handler<StateUpdateEvent> {
         if (shouldDisableSafeWalk()) {
             it.state.enforceEagle = false
-        } else if (!player.abilities.flying && Eagle.enabled && player.isCloseToEdge(edgeDistance.toDouble()) && placedBlocks == 0) {
+        } else if (!player.abilities.flying && Eagle.enabled && player.isCloseToEdge(edgeDistance.toDouble())  && placedBlocks == 0) {
             it.state.enforceEagle = true
         }
     }
