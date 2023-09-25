@@ -33,6 +33,7 @@ import net.ccbluex.liquidbounce.features.module.modules.player.*
 import net.ccbluex.liquidbounce.features.module.modules.player.invcleaner.ModuleInventoryCleaner
 import net.ccbluex.liquidbounce.features.module.modules.render.*
 import net.ccbluex.liquidbounce.features.module.modules.world.*
+import net.ccbluex.liquidbounce.features.module.modules.world.crystalAura.ModuleCrystalAura
 import org.lwjgl.glfw.GLFW
 
 private val modules = mutableListOf<Module>()
@@ -124,6 +125,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleNotifier,
             ModuleSpammer,
             ModuleTeams,
+            ModuleDebugRecorder,
 
             // Movement
             ModuleAirJump,
@@ -175,7 +177,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleRegen,
             ModuleZoot,
 
-            //Render
+            // Render
             ModuleAnimation,
             ModuleAntiBlind,
             ModuleBlockESP,
@@ -205,6 +207,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleTrajectories,
             ModuleTrueSight,
             ModuleXRay,
+            ModuleDebug,
 
             // World
             ModuleAutoDisable,

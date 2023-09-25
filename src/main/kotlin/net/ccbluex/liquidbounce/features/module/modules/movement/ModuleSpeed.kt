@@ -45,7 +45,7 @@ object ModuleSpeed : Module("Speed", Category.MOVEMENT) {
             Verus,
             SpeedYPort,
             LegitHop,
-            Custom,
+            Custom
         )
     )
 
@@ -57,7 +57,6 @@ object ModuleSpeed : Module("Speed", Category.MOVEMENT) {
 
     private object Verus : Choice("Verus") {
 
-        //b3882
         override val parent: ChoiceConfigurable
             get() = modes
 

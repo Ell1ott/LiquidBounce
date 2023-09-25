@@ -32,7 +32,7 @@ import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.entity.SimulatedPlayer
 import net.ccbluex.liquidbounce.utils.entity.box
 import net.ccbluex.liquidbounce.utils.entity.interpolateCurrentPosition
-import net.ccbluex.liquidbounce.utils.extensions.toRadians
+import net.ccbluex.liquidbounce.utils.client.toRadians
 import net.minecraft.block.ShapeContext
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.entity.Entity

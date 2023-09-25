@@ -29,9 +29,11 @@ import net.ccbluex.liquidbounce.render.engine.Vec3
 import net.ccbluex.liquidbounce.render.utils.rainbow
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
 import net.ccbluex.liquidbounce.utils.aiming.RotationsConfigurable
-import net.ccbluex.liquidbounce.utils.aiming.raycast
-import net.ccbluex.liquidbounce.utils.block.*
-import net.ccbluex.liquidbounce.utils.client.SilentHotbar
+import net.ccbluex.liquidbounce.utils.aiming.raytraceBlock
+import net.ccbluex.liquidbounce.utils.block.getBlock
+import net.ccbluex.liquidbounce.utils.block.getCenterDistanceSquared
+import net.ccbluex.liquidbounce.utils.block.getState
+import net.ccbluex.liquidbounce.utils.block.searchBlocksInCuboid
 import net.ccbluex.liquidbounce.utils.entity.eyes
 import net.ccbluex.liquidbounce.utils.entity.getNearestPoint
 import net.ccbluex.liquidbounce.utils.item.getEnchantment
@@ -376,7 +378,7 @@ object ModuleAutoFarm : Module("AutoFarm", Category.WORLD) {
 
         val (pos, state) = blockToProcess
 
-        val rt = RotationManager.raytraceBlock(
+        val rt = raytraceBlock(
             player.eyes,
             pos,
             state,

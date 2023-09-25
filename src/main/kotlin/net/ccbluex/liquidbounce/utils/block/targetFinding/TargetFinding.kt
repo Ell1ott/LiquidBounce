@@ -7,16 +7,13 @@ import net.ccbluex.liquidbounce.utils.block.canBeReplacedWith
 import net.ccbluex.liquidbounce.utils.block.getState
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.ccbluex.liquidbounce.utils.entity.eyes
-import net.ccbluex.liquidbounce.utils.extensions.getFace
+import net.ccbluex.liquidbounce.utils.client.getFace
 import net.ccbluex.liquidbounce.utils.math.geometry.Face
 import net.minecraft.block.*
 import net.minecraft.item.ItemStack
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.hit.HitResult
 import net.minecraft.util.math.*
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.random.Random
 
 
 enum class AimMode(override val choiceName: String) : NamedChoice {
@@ -24,13 +21,24 @@ enum class AimMode(override val choiceName: String) : NamedChoice {
     RANDOM("Random"),
     STABILIZED("Stabilized"),
     GODBRIDGE("Godbridge")
+    NEAREST_ROTATION("NearestRotation"),
 }
 
 class BlockPlacementTargetFindingOptions(
     val offsetsToInvestigate: List<Vec3i>,
     val stackToPlaceWith: ItemStack,
-    val facePositionFactory: FaceTargetPositionFactory
-)
+    val facePositionFactory: FaceTargetPositionFactory,
+    /**
+     * Compares two offsets by their priority. The offset with the higher priority will be prioritized.
+     */
+    val offsetPriorityGetter: (Vec3i) -> Double
+) {
+    companion object {
+        val PRIORITIZE_LEAST_BLOCK_DISTANCE: (Vec3i) -> Double = { vec ->
+            -Vec3d.of(vec).add(0.5, 0.5, 0.5).squaredDistanceTo(mc.player!!.pos)
+        }
+    }
+}
 
 data class BlockTargetPlan(
     val blockPosToInteractWith: BlockPos,
@@ -58,17 +66,19 @@ enum class BlockTargetingMode {
 private fun findBestTargetPlanForTargetPosition(posToInvestigate: BlockPos, mode: BlockTargetingMode): BlockTargetPlan? {
     val directions = Direction.values()
 
-    return directions.mapNotNull { direction ->
+    val options = directions.mapNotNull { direction ->
         val targetPlan =
             getTargetPlanForPositionAndDirection(posToInvestigate, direction, mode)
-            ?: return@mapNotNull null
+                ?: return@mapNotNull null
 
         // Check if the target face is pointing away from the player
         if (targetPlan.angleToPlayerEyeCosine < 0)
             return@mapNotNull null
 
         return@mapNotNull targetPlan
-    }.maxByOrNull { it.angleToPlayerEyeCosine }
+    }
+
+    return options.maxByOrNull { it.angleToPlayerEyeCosine }
 }
 
 /**
@@ -102,7 +112,10 @@ fun findBestBlockPlacementTarget(pos: BlockPos, options: BlockPlacementTargetFin
         return null
     }
 
-    val offsetsToInvestigate = options.offsetsToInvestigate
+    val offsetsToInvestigate =
+        options.offsetsToInvestigate.sortedByDescending {
+            options.offsetPriorityGetter(pos.add(it))
+        }
 
     for (offset in offsetsToInvestigate) {
         val posToInvestigate = pos.add(offset)
@@ -136,6 +149,7 @@ fun findBestBlockPlacementTarget(pos: BlockPos, options: BlockPlacementTargetFin
 
         return BlockPlacementTarget(
             currPos,
+            posToInvestigate,
             targetPlan.interactionDirection,
             face.face.from.y + currPos.y,
             rotation
@@ -185,7 +199,14 @@ private fun findTargetPointOnFace(
 
 
 data class BlockPlacementTarget(
-    val blockPos: BlockPos,
+    /**
+     * BlockPos which is right-clicked
+     */
+    val interactedBlockPos: BlockPos,
+    /**
+     * Block pos at which a new block is placed
+     */
+    val placedBlock: BlockPos,
     val direction: Direction,
     /**
      * Some blocks must be placed above a certain height of the block. For example stairs and slabs must be placed
@@ -195,10 +216,16 @@ data class BlockPlacementTarget(
     val rotation: Rotation
 ) {
     fun doesCrosshairTargetFullfitRequirements(crosshairTarget: BlockHitResult): Boolean {
-        return !((crosshairTarget.type != HitResult.Type.BLOCK)
-                || (crosshairTarget.blockPos != this.blockPos)
-                || (crosshairTarget.side != this.direction)
-                || (crosshairTarget.pos.y < this.minPlacementY))
+        if (crosshairTarget.type != HitResult.Type.BLOCK)
+            return false
+        if (crosshairTarget.blockPos != this.interactedBlockPos)
+            return false
+        if (crosshairTarget.side != this.direction)
+            return false
+        if (crosshairTarget.pos.y < this.minPlacementY)
+            return false
+
+        return true
     }
 }
 

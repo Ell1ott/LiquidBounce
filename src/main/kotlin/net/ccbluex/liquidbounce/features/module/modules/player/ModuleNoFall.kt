@@ -154,7 +154,8 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
             val options = BlockPlacementTargetFindingOptions(
                 listOf(Vec3i(0, 0, 0)),
                 player.inventory.getStack(itemForMLG!!),
-                CenterTargetPositionFactory
+                CenterTargetPositionFactory,
+                BlockPlacementTargetFindingOptions.PRIORITIZE_LEAST_BLOCK_DISTANCE
             )
 
             currentTarget = findBestBlockPlacementTarget(collision.up(), options)

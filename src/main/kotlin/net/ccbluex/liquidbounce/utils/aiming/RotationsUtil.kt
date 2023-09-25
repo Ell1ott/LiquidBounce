@@ -25,13 +25,12 @@ import net.ccbluex.liquidbounce.event.Listenable
 import net.ccbluex.liquidbounce.event.PlayerVelocityStrafe
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.utils.client.mc
+import net.ccbluex.liquidbounce.utils.combat.CombatManager
 import net.ccbluex.liquidbounce.utils.entity.box
 import net.ccbluex.liquidbounce.utils.entity.eyes
-import net.ccbluex.liquidbounce.utils.entity.getNearestPoint
 import net.ccbluex.liquidbounce.utils.entity.rotation
-import net.ccbluex.liquidbounce.utils.kotlin.step
-import net.minecraft.block.BlockState
-import net.minecraft.block.ShapeContext
+import net.ccbluex.liquidbounce.utils.math.plus
+import net.ccbluex.liquidbounce.utils.math.times
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen
 import net.minecraft.client.gui.screen.ingame.InventoryScreen
 import net.minecraft.entity.Entity
@@ -70,158 +69,9 @@ object RotationManager : Listenable {
     // Active configurable
     var activeConfigurable: RotationsConfigurable? = null
 
-    // useful for something like autopot
-    var deactivateManipulation = false
-
-    fun raytraceBlock(
-        eyes: Vec3d, pos: BlockPos, state: BlockState, range: Double, wallsRange: Double
-    ): VecRotation? {
-        val offset = Vec3d(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble())
-        val shape = state.getOutlineShape(mc.world, pos, ShapeContext.of(mc.player))
-
-        for (box in shape.boundingBoxes.sortedBy { -(it.maxX - it.minX) * (it.maxY - it.minY) * (it.maxZ - it.minZ) }) {
-            return raytraceBox(eyes, box.offset(offset), range, wallsRange, expectedTarget = pos) ?: continue
-        }
-
-        return null
-    }
-
-    /**
-     * Find the best spot of a box to aim at.
-     */
-    fun raytraceBox(
-        eyes: Vec3d,
-        box: Box,
-        range: Double,
-        wallsRange: Double,
-        expectedTarget: BlockPos? = null,
-        pattern: Pattern = GaussianPattern,
-    ): VecRotation? {
-        val rangeSquared = range * range
-        val wallsRangeSquared = wallsRange * wallsRange
-
-        val preferredSpot = pattern.spot(box)
-        val preferredRotation = makeRotation(preferredSpot, eyes)
-        val preferredDistance = eyes.squaredDistanceTo(preferredSpot)
-
-        val isPreferredSpotVisible = if (expectedTarget != null) {
-            facingBlock(eyes, preferredSpot, expectedTarget)
-        } else {
-            preferredDistance <= rangeSquared && isVisible(eyes, preferredSpot)
-        }
-
-        // If pattern-generated spot is visible or its distance is within wall range, then return right here.
-        // No need to enter the loop when we already have a result.
-        if (isPreferredSpotVisible || preferredDistance <= wallsRangeSquared) {
-            return VecRotation(preferredRotation, preferredSpot)
-        }
-
-        var visibleRot: VecRotation? = null
-        var notVisibleRot: VecRotation? = null
-
-        // There are some spots that loops cannot detect, therefore this is used
-        // since it finds the nearest spot within the requested range.
-        val nearestSpot = getNearestPoint(eyes, box)
-        val nearestDistance = eyes.squaredDistanceTo(nearestSpot)
-
-        for (x in 0.0..1.0 step 0.1) {
-            for (y in 0.0..1.0 step 0.1) {
-                for (z in 0.0..1.0 step 0.1) {
-                    var vec3 = Vec3d(
-                        box.minX + (box.maxX - box.minX) * x,
-                        box.minY + (box.maxY - box.minY) * y,
-                        box.minZ + (box.maxZ - box.minZ) * z
-                    )
-
-                    var distance = eyes.squaredDistanceTo(vec3)
-
-                    // Start off with the nearest spot, then see which is better
-                    val useNearestSpot = visibleRot == null && notVisibleRot == null
-
-                    // If the distance is greater than range, use the nearest spot.
-                    if (distance > rangeSquared && useNearestSpot) {
-                        distance = nearestDistance
-                        vec3 = nearestSpot
-                    }
-
-                    val visible = if (expectedTarget != null) {
-                        facingBlock(eyes, vec3, expectedTarget)
-                    } else {
-                        distance <= rangeSquared && isVisible(eyes, vec3)
-                    }
-
-                    // Is either spot visible or distance within wall range?
-                    if (visible || distance <= wallsRangeSquared) {
-                        val rotation = makeRotation(vec3, eyes)
-                        val currentRotation = currentRotation ?: mc.player?.rotation ?: return null
-
-                        if (visible) {
-                            if (visibleRot == null || rotationDifference(
-                                    rotation, currentRotation
-                                ) < rotationDifference(visibleRot.rotation, currentRotation)
-                            ) {
-                                visibleRot = VecRotation(rotation, vec3)
-                            }
-                        } else {
-                            if (notVisibleRot == null || rotationDifference(
-                                    rotation, currentRotation
-                                ) < rotationDifference(notVisibleRot.rotation, currentRotation)
-                            ) {
-                                notVisibleRot = VecRotation(rotation, vec3)
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return visibleRot ?: notVisibleRot
-    }
-
-    /**
-     * Find the best spot of the upper side of the block
-     */
-    fun canSeeBlockTop(
-        eyes: Vec3d, pos: BlockPos, range: Double, wallsRange: Double
-    ): Boolean {
-        val rangeSquared = range * range
-        val wallsRangeSquared = wallsRange * wallsRange
-
-        val minX = pos.x.toDouble()
-        val y = pos.y + 0.9
-        val minZ = pos.z.toDouble()
-
-        for (x in 0.1..0.9 step 0.4) {
-            for (z in 0.1..0.9 step 0.4) {
-                val vec3 = Vec3d(
-                    minX + x, y, minZ + z
-                )
-
-                // skip because of out of range
-                val distance = eyes.squaredDistanceTo(vec3)
-
-                if (distance > rangeSquared) {
-                    continue
-                }
-
-                // check if target is visible to eyes
-                val visible = facingBlock(eyes, vec3, pos, Direction.UP)
-
-                // skip because not visible in range
-                if (!visible && distance > wallsRangeSquared) {
-                    continue
-                }
-
-                return true
-            }
-
-        }
-
-        return false
-    }
-
     fun aimAt(vec: Vec3d, eyes: Vec3d, openInventory: Boolean = false, configurable: RotationsConfigurable) =
         aimAt(makeRotation(vec, eyes), openInventory, configurable)
+
 
     fun aimAt(rotation: Rotation, openInventory: Boolean = false, configurable: RotationsConfigurable) {
         if (!shouldUpdate()) {
@@ -258,11 +108,6 @@ object RotationManager : Listenable {
         // Prevents any rotation changes, when inventory is opened
         val canRotate =
             (mc.currentScreen !is InventoryScreen && mc.currentScreen !is GenericContainerScreen) || ignoreOpenInventory
-
-        // Update patterns
-        for (pattern in AIMING_PATTERNS) {
-            pattern.update()
-        }
 
         // Update rotations
         val speed = RandomUtils.nextFloat(
@@ -319,7 +164,7 @@ object RotationManager : Listenable {
     /**
      * Checks if it should update the server-side rotations
      */
-    fun shouldUpdate() = !deactivateManipulation
+    fun shouldUpdate() = !CombatManager.shouldPauseRotation()
 
     /**
      * Calculate difference between the server rotation and your rotation
@@ -406,6 +251,36 @@ object RotationManager : Listenable {
         }
 
         return currVelocity
+    }
+
+}
+
+class LeastDifferencePreference(
+    private val baseRotation: Rotation,
+    private val basePoint: Vec3d? = null,
+) : RotationPreference {
+    override fun getPreferredSpot(eyesPos: Vec3d, range: Double): Vec3d {
+        if (this.basePoint != null) {
+            return this.basePoint
+        }
+
+        return eyesPos + this.baseRotation.rotationVec * range
+    }
+
+    override fun compare(o1: Rotation, o2: Rotation): Int {
+        val rotationDifferenceO1 = RotationManager.rotationDifference(baseRotation, o1)
+        val rotationDifferenceO2 = RotationManager.rotationDifference(baseRotation, o2)
+
+        return rotationDifferenceO1.compareTo(rotationDifferenceO2)
+    }
+
+    companion object {
+        val LEAST_DISTANCE_TO_CURRENT_ROTATION: LeastDifferencePreference
+            get() = LeastDifferencePreference(RotationManager.currentRotation ?: mc.player?.rotation!!)
+
+        fun leastDifferenceToLastPoint(eyes: Vec3d, point: Vec3d): LeastDifferencePreference {
+            return LeastDifferencePreference(RotationManager.makeRotation(vec = point, eyes = eyes), point)
+        }
     }
 
 }
