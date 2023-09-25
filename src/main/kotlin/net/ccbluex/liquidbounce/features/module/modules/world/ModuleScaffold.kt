@@ -35,6 +35,7 @@ import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Eag
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Slow.slowSpeed
 import net.ccbluex.liquidbounce.render.engine.Color4b
 import net.ccbluex.liquidbounce.render.engine.Vec3
+import net.ccbluex.liquidbounce.utils.aiming.Rotation
 import net.ccbluex.liquidbounce.utils.aiming.RotationManager
 import net.ccbluex.liquidbounce.utils.aiming.RotationsConfigurable
 import net.ccbluex.liquidbounce.utils.aiming.raycast
@@ -89,11 +90,7 @@ import net.minecraft.util.math.Direction
 import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.Vec3d
 import net.minecraft.util.math.Vec3i
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.round
-import kotlin.math.sin
+import kotlin.math.*
 import kotlin.random.Random
 
 /**
@@ -103,8 +100,8 @@ import kotlin.random.Random
  */
 object ModuleScaffold : Module("Scaffold", Category.WORLD) {
     private val silent by boolean("Silent", true)
-    private var CPS by intRange("CPS", 15..18, 1..40)
     private val slotResetDelay by int("SlotResetDelay", 5, 0..40)
+    private var delay by intRange("Delay", 3..5, 0..40)
 
     private val swing by boolean("Swing", true)
 
@@ -270,9 +267,10 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
                     ),
                 )
             }
-
             RotationManager.aimAt(
-                target.rotation,
+                if (this.aimMode.get() == AimMode.GODBRIDGE)
+                    Rotation(floor(RotationManager.makeRotation(target.placedBlock.toCenterPos().offset(target.direction, 0.5), player.eyes).yaw / 90) * 90 + 45, 75f)
+                else target.rotation,
                 openInventory = ignoreOpenInventory,
                 configurable = rotationsConfigurable,
             )

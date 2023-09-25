@@ -20,7 +20,7 @@ enum class AimMode(override val choiceName: String) : NamedChoice {
     CENTER("Center"),
     RANDOM("Random"),
     STABILIZED("Stabilized"),
-    GODBRIDGE("Godbridge")
+    GODBRIDGE("Godbridge"),
     NEAREST_ROTATION("NearestRotation"),
 }
 

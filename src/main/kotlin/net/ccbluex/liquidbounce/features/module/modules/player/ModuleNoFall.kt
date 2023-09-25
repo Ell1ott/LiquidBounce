@@ -163,7 +163,7 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
 
             val target = currentTarget ?: return@handler
 
-            pos = target.blockPos.toCenterPos()
+            pos = target.placedBlock.toCenterPos()
             RotationManager.aimAt(target.rotation, configurable = rotationsConfigurable)
         }
 
@@ -173,7 +173,7 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
 
             val rayTraceResult = raycast(4.5, rotation) ?: return@repeatable
 
-            if (rayTraceResult.type != HitResult.Type.BLOCK || rayTraceResult.blockPos != target.blockPos || rayTraceResult.side != target.direction) {
+            if (rayTraceResult.type != HitResult.Type.BLOCK || rayTraceResult.blockPos != target.placedBlock || rayTraceResult.side != target.direction) {
                 return@repeatable
             }
             if(waterplaced){

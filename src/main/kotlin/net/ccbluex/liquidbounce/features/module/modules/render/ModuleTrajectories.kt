@@ -330,7 +330,7 @@ object ModuleTrajectories : Module("Trajectories", Category.RENDER) {
     var simulatedPlayerPoints = mutableListOf<Vec3>()
 
     val tickRep = handler<MovementInputEvent> { event ->
-        val simulatedPlayer = SimulatedPlayer.fromPlayer(player, SimulatedPlayer.SimulatedPlayerInput(event.forwards, event.backwards, event.left, event.right, player.input.jumping, player.isSprinting))
+        val simulatedPlayer = SimulatedPlayer.fromPlayer(player, SimulatedPlayer.SimulatedPlayerInput(event.directionalInput, event.jumping, player.isSprinting))
         simulatedPlayerPoints.clear()
         for (i in 0..100){
 

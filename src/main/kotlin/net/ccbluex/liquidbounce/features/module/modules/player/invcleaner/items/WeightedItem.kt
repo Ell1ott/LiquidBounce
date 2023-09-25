@@ -2,6 +2,7 @@ package net.ccbluex.liquidbounce.features.module.modules.player.invcleaner.items
 
 import net.ccbluex.liquidbounce.features.module.modules.player.invcleaner.ItemCategory
 import net.ccbluex.liquidbounce.features.module.modules.player.invcleaner.ItemType
+import net.ccbluex.liquidbounce.utils.item.ArmorConfigurable
 import net.ccbluex.liquidbounce.utils.item.isHotbarSlot
 import net.ccbluex.liquidbounce.utils.sorting.compareByCondition
 import net.minecraft.item.ItemStack
@@ -17,5 +18,5 @@ open class WeightedItem(val itemStack: ItemStack, val slot: Int) : Comparable<We
         return false
     }
 
-    override fun compareTo(other: WeightedItem): Int = compareByCondition(this, other, WeightedItem::isInHotbar)
+    override fun compareTo(other: WeightedItem, config: ArmorConfigurable): Int = compareByCondition(this, other, WeightedItem::isInHotbar)
 }

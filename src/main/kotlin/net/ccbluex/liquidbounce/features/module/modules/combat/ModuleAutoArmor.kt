@@ -23,15 +23,7 @@ import net.ccbluex.liquidbounce.event.repeatable
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.utils.entity.moving
-import net.ccbluex.liquidbounce.utils.item.ArmorComparator
-import net.ccbluex.liquidbounce.utils.item.ArmorPiece
-import net.ccbluex.liquidbounce.utils.item.InventoryConstraintsConfigurable
-import net.ccbluex.liquidbounce.utils.item.clickHotbarOrOffhand
-import net.ccbluex.liquidbounce.utils.item.convertClientSlotToServerSlot
-import net.ccbluex.liquidbounce.utils.item.isHotbarSlot
-import net.ccbluex.liquidbounce.utils.item.isNothing
-import net.ccbluex.liquidbounce.utils.item.isPlayerInventory
-import net.ccbluex.liquidbounce.utils.item.runWithOpenedInventory
+import net.ccbluex.liquidbounce.utils.item.*
 import net.minecraft.client.gui.screen.ingame.InventoryScreen
 import net.minecraft.client.network.ClientPlayerEntity
 import net.minecraft.item.ArmorItem
@@ -46,7 +38,7 @@ import net.minecraft.screen.slot.SlotActionType
 object ModuleAutoArmor : Module("AutoArmor", Category.COMBAT) {
     private val inventoryConstraints = tree(InventoryConstraintsConfigurable())
     private val hotbar by boolean("Hotbar", true)
-    val armorconfigurable = ArmorConfigurable()
+    private val armorconfigurable = ArmorConfigurable()
 
     init {
         tree(armorconfigurable)
@@ -103,7 +95,7 @@ object ModuleAutoArmor : Module("AutoArmor", Category.COMBAT) {
                 }
                 .groupBy(ArmorPiece::entitySlotId)
 
-        return armorPiecesGroupedBySlotId.values.mapNotNull { it.maxWithOrNull(ArmorComparator) }
+        return armorPiecesGroupedBySlotId.values.mapNotNull { it.maxWithOrNull(ArmorComparator(armorconfigurable)) }
     }
 
     /**
