@@ -29,6 +29,7 @@ import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.event.repeatable
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
+import net.ccbluex.liquidbounce.features.module.modules.movement.ModuleSpeed
 import net.ccbluex.liquidbounce.features.module.modules.render.ModuleDebug
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Eagle.blocksToEagle
 import net.ccbluex.liquidbounce.features.module.modules.world.ModuleScaffold.Eagle.edgeDistance
@@ -269,7 +270,7 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
             }
             RotationManager.aimAt(
                 if (this.aimMode.get() == AimMode.GODBRIDGE)
-                    Rotation(floor(RotationManager.makeRotation(target.placedBlock.toCenterPos().offset(target.direction, 0.5), player.eyes).yaw / 90) * 90 + 45, 75f)
+                    Rotation(floor(target.rotation.yaw / 90) * 90 + 45, 75f)
                 else target.rotation,
                 openInventory = ignoreOpenInventory,
                 configurable = rotationsConfigurable,
@@ -314,9 +315,18 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
             val target = currentTarget ?: return@repeatable
             val currentRotation = RotationManager.currentRotation ?: return@repeatable
             val currentCrosshairTarget = raycast(4.5, currentRotation) ?: return@repeatable
-
+            ModuleDebug.debugGeometry(
+                ModuleScaffold,
+                "wantsToPlace",
+                ModuleDebug.DebuggedBox(Box.from(target.placedBlock.toVec3d()), Color4b(158, 50, 168, 127)),
+            )
             // Is the target the crosshair points to well-adjusted to our target?
-            if (!target.doesCrosshairTargetFullfitRequirements(currentCrosshairTarget) || !isValidCrosshairTarget(currentCrosshairTarget)) {
+            if (!target.doesCrosshairTargetFullfitRequirements(currentCrosshairTarget) ||
+                !isValidCrosshairTarget(currentCrosshairTarget) ||
+                currentCrosshairTarget.blockPos.offset(currentCrosshairTarget.side).y + 0.3 > player.pos.y) {
+                if(world.getBlockCollisions(player, player.boundingBox.offset(player.velocity.multiply(2.0))).none() && player.isOnGround){
+                    player.jump()
+                }
                 return@repeatable
             }
 

@@ -218,12 +218,18 @@ data class BlockPlacementTarget(
     fun doesCrosshairTargetFullfitRequirements(crosshairTarget: BlockHitResult): Boolean {
         if (crosshairTarget.type != HitResult.Type.BLOCK)
             return false
-        if (crosshairTarget.blockPos != this.interactedBlockPos)
-            return false
-        if (crosshairTarget.side != this.direction)
-            return false
+//        if (crosshairTarget.blockPos != this.interactedBlockPos)
+//            return false
+//        if (crosshairTarget.blockPos.offset(crosshairTarget.side) != placedBlock)
+//            return false
+//        if (crosshairTarget.side != this.direction)
+//            return false
         if (crosshairTarget.pos.y < this.minPlacementY)
             return false
+//        if(crosshairTarget.pos.y > maxY)
+//            return false
+
+
 
         return true
     }

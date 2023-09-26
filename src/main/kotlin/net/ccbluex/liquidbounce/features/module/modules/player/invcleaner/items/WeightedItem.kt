@@ -18,5 +18,9 @@ open class WeightedItem(val itemStack: ItemStack, val slot: Int) : Comparable<We
         return false
     }
 
-    override fun compareTo(other: WeightedItem, config: ArmorConfigurable): Int = compareByCondition(this, other, WeightedItem::isInHotbar)
+    override fun compareTo(other: WeightedItem): Int = compareByCondition(this, other, WeightedItem::isInHotbar)
+
+   public open fun compareToUsingArmorConfig(other: WeightedItem, armorConfig: ArmorConfigurable): Int = compareByCondition(this, other, WeightedItem::isInHotbar)
+
+
 }
