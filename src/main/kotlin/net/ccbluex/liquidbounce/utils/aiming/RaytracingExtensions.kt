@@ -127,7 +127,7 @@ fun canSeePointFrom(
     vec3: Vec3d,
 ) = mc.world?.raycast(
     RaycastContext(
-        eyes, vec3, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, mc.player,
+        eyes, vec3, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.WATER, mc.player,
     ),
 )?.type == HitResult.Type.MISS
 

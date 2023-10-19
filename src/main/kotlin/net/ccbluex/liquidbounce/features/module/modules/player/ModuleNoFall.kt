@@ -21,19 +21,22 @@ package net.ccbluex.liquidbounce.features.module.modules.player
 
 import net.ccbluex.liquidbounce.config.Choice
 import net.ccbluex.liquidbounce.config.ChoiceConfigurable
+import net.ccbluex.liquidbounce.config.ToggleableConfigurable
 import net.ccbluex.liquidbounce.event.*
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
-import net.ccbluex.liquidbounce.utils.aiming.RotationManager
-import net.ccbluex.liquidbounce.utils.aiming.RotationsConfigurable
-import net.ccbluex.liquidbounce.utils.aiming.raycast
+import net.ccbluex.liquidbounce.utils.aiming.*
 import net.ccbluex.liquidbounce.utils.block.getBlock
 import net.ccbluex.liquidbounce.utils.block.targetFinding.BlockPlacementTarget
 import net.ccbluex.liquidbounce.utils.block.targetFinding.BlockPlacementTargetFindingOptions
 import net.ccbluex.liquidbounce.utils.block.targetFinding.CenterTargetPositionFactory
 import net.ccbluex.liquidbounce.utils.block.targetFinding.findBestBlockPlacementTarget
 import net.ccbluex.liquidbounce.utils.client.SilentHotbar
+import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.entity.FallingPlayer
+import net.ccbluex.liquidbounce.utils.aiming.raytraceBlock
+import net.ccbluex.liquidbounce.utils.block.getState
+import net.ccbluex.liquidbounce.utils.entity.eyes
 import net.minecraft.block.Blocks
 import net.minecraft.item.Item
 import net.minecraft.item.ItemStack
@@ -111,6 +114,15 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
 
         val minFallDist by float("MinFallDistance", 5f, 2f..50f)
 
+//        val pickupWater by boolean("PickupWater", true)
+        object PickupWater: ToggleableConfigurable(ModuleNoFall, "PickupWater", true) {
+            val delay by intRange("Delay", 2..3, 1..20)
+        }
+
+        init {
+            tree(PickupWater)
+        }
+
         val rotationsConfigurable = tree(RotationsConfigurable())
 
         var currentTarget: BlockPlacementTarget? = null
@@ -150,21 +162,61 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
             RotationManager.aimAt(target.rotation, configurable = rotationsConfigurable)
         }
 
-        val tickHandler = handler<GameTickEvent> {
-            val target = currentTarget ?: return@handler
-            val rotation = RotationManager.currentRotation ?: return@handler
+        val repeatable = repeatable {
+            chat("tick")
 
-            val rayTraceResult = raycast(4.5, rotation) ?: return@handler
+            val target = currentTarget ?: return@repeatable
+            val rotation = RotationManager.currentRotation ?: return@repeatable
+
+            val rayTraceResult = raycast(4.5, rotation) ?: return@repeatable
 
             if (rayTraceResult.type != HitResult.Type.BLOCK || rayTraceResult.blockPos != target.interactedBlockPos || rayTraceResult.side != target.direction) {
-                return@handler
+                return@repeatable
             }
 
-            val item = itemForMLG ?: return@handler
+            val item = itemForMLG ?: return@repeatable
 
             SilentHotbar.selectSlotSilently(this, item, 1)
+            chat(player.inventory.getStack(item).item.toString())
 
-            doPlacement(rayTraceResult)
+            if(player.inventory.getStack(item).item == Items.WATER_BUCKET && PickupWater.enabled){
+                var itemSucces = false
+                doPlacement(rayTraceResult, Hand.MAIN_HAND, {true}) {
+                    itemSucces = true
+                    return@doPlacement true
+
+                }
+                if(itemSucces) {
+                    val delay = PickupWater.delay.random()
+                    repeat(delay + 30) {
+                        wait(1)
+                        chat("de")
+                        val rayTraceResult = raytraceBlock(
+                            player.eyes,
+                            target.placedBlock,
+                            target.placedBlock.getState() ?: return@repeat,
+                            range = 4.5,
+                            wallsRange = 0.0,
+                        ) ?: return@repeat
+
+                        chat("aiming at block")
+
+                        RotationManager.aimAt(rayTraceResult.rotation, false, rotationsConfigurable)
+
+                        if(it > delay) {
+                            val raycastResult = raycast(4.5, rotation) ?: return@repeat
+                            if (raycastResult.type != HitResult.Type.BLOCK || raycastResult.blockPos != target.interactedBlockPos || raycastResult.side != target.direction) {
+                                doPlacement(raycastResult)
+                            }
+
+                        }
+
+
+                    }
+                }
+            } else {
+                doPlacement(rayTraceResult)
+            }
 
             currentTarget = null
         }
@@ -197,6 +249,7 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
                     return
                 }
                 interactionResult.isAccepted -> {
+
                     val wasStackUsed = !stack.isEmpty && (stack.count != count || interaction.hasCreativeInventory())
 
                     handleActionsOnAccept(hand, interactionResult, wasStackUsed, onPlacementSuccess)
@@ -215,11 +268,14 @@ object ModuleNoFall : Module("NoFall", Category.PLAYER) {
             wasStackUsed: Boolean,
             onPlacementSuccess: () -> Boolean,
         ) {
+            chat("1")
             if (!interactionResult.shouldSwingHand()) {
                 return
             }
+            chat("2")
 
             if (onPlacementSuccess()) {
+                chat("3")
                 player.swingHand(hand)
             }
 
