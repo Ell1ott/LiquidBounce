@@ -209,6 +209,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleAutoDisable,
             ModuleAutoFarm,
             ModuleAutoTool,
+            ModuleAutoMine,
             ModuleChestAura,
             ModuleCrystalAura,
             ModuleFastBreak,
@@ -219,7 +220,8 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleProjectilePuncher,
             ModuleScaffold,
             ModuleTimer,
-            ModuleNuker
+            ModuleNuker,
+
         )
 
         builtin.apply {
