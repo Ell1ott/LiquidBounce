@@ -375,7 +375,7 @@ fun RenderEnvironment.drawGradientQuad(vertices: List<Vec3>, colors: List<Color4
     tessellator.draw()
 }
 
-const val CIRCLE_RES = 40
+const val CIRCLE_RES = 100
 // using a val instead of a function for better performance
 val circlePoints =
     (0..CIRCLE_RES).map {

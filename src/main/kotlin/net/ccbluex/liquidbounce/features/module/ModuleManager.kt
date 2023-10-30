@@ -180,6 +180,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleCameraClip,
             ModuleClickGui,
             ModuleESP,
+            ModuleExplosion,
             ModuleFreeCam,
             ModuleFullBright,
             ModuleHoleESP,

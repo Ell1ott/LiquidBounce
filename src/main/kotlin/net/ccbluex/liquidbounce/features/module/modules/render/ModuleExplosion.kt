@@ -18,24 +18,17 @@
  */
 package net.ccbluex.liquidbounce.features.module.modules.render
 
-import net.ccbluex.liquidbounce.config.Choice
-import net.ccbluex.liquidbounce.config.ChoiceConfigurable
 import net.ccbluex.liquidbounce.event.WorldRenderEvent
 import net.ccbluex.liquidbounce.event.handler
-import net.ccbluex.liquidbounce.features.misc.FriendManager
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
-import net.ccbluex.liquidbounce.render.*
+import net.ccbluex.liquidbounce.render.drawGradientCircle
 import net.ccbluex.liquidbounce.render.engine.Color4b
-import net.ccbluex.liquidbounce.render.utils.ColorUtils
-import net.ccbluex.liquidbounce.render.utils.rainbow
-import net.ccbluex.liquidbounce.utils.combat.shouldBeShown
+import net.ccbluex.liquidbounce.render.renderEnvironmentForWorld
+import net.ccbluex.liquidbounce.render.withPosition
 import net.ccbluex.liquidbounce.utils.entity.interpolateCurrentPosition
-import net.minecraft.entity.Entity
-import net.minecraft.entity.LivingEntity
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.util.math.Box
-import java.awt.Color
+import net.minecraft.entity.TntEntity
+import net.minecraft.entity.mob.CreeperEntity
 
 /**
  * ESP module
@@ -45,134 +38,40 @@ import java.awt.Color
 
 object ModuleExplosion : Module("Explosion", Category.RENDER) {
 
-    override val translationBaseKey: String
-        get() = "liquidbounce.module.esp"
+    private val innerColor by color("InnerColor", Color4b(0, 255, 4, 0))
+    private val outerColor by color("OuterColor", Color4b(0, 255, 4, 89))
 
-    private val modes = choices("Mode", GlowMode, arrayOf(BoxMode, OutlineMode, GlowMode))
+    private val deadEntities by boolean("DeadEntities", false)
 
-    private val colorModes = choices("ColorMode", StaticMode, arrayOf(StaticMode, RainbowMode))
+    val renderHandler = handler<WorldRenderEvent> { event ->
+        val matrixStack = event.matrixStack
 
-    private object StaticMode : Choice("Static") {
-        override val parent: ChoiceConfigurable
-            get() = colorModes
-
-        val color by color("Color", Color4b.WHITE)
-    }
-
-    private object RainbowMode : Choice("Rainbow") {
-        override val parent: ChoiceConfigurable
-            get() = colorModes
-    }
-
-    val teamColor by boolean("TeamColor", true)
-
-    private object BoxMode : Choice("Box") {
-
-        override val parent: ChoiceConfigurable
-            get() = modes
-
-        private val outline by boolean("Outline", true)
-
-        val renderHandler = handler<WorldRenderEvent> { event ->
-            val matrixStack = event.matrixStack
-
-            val entitiesWithBoxes = findRenderedEntities().groupBy { entity ->
-                val dimensions = entity.getDimensions(entity.pose)
-
-                val d = dimensions.width.toDouble() / 2.0
-
-                Box(-d, 0.0, -d, d, dimensions.height.toDouble(), d).expand(0.05)
+        val entitiesWithBoxes = findRenderedEntities().groupBy { entity ->
+            when(entity) {
+                is CreeperEntity -> 3
+                is TntEntity -> 4
+                else -> 0
             }
+        }
 
-            renderEnvironmentForWorld(matrixStack) {
-                entitiesWithBoxes.forEach { box, entities ->
-                    for (entity in entities) {
-                        val pos = entity.interpolateCurrentPosition(event.partialTicks)
-                        val color = getColor(entity)
+        renderEnvironmentForWorld(matrixStack) {
+            entitiesWithBoxes.forEach { power, entities ->
+                for (entity in entities) {
+                    val pos = entity.interpolateCurrentPosition(event.partialTicks)
 
-                        val baseColor = color.alpha(50)
-                        val outlineColor = color.alpha(100)
-
-                        withPosition(pos) {
-                            withColor(baseColor) {
-                                drawSolidBox(box)
-                            }
-
-                            if (outline) {
-                                withColor(outlineColor) {
-                                    drawOutlinedBox(box)
-                                }
-                            }
-                        }
+                    withPosition(pos) {
+                        drawGradientCircle(power.toFloat() * 2f, power.toFloat() * 1.5f, innerColor, outerColor)
                     }
                 }
             }
         }
     }
 
-    fun findRenderedEntities() = world.entities.filter { it.shouldBeShown() }
 
-    object GlowMode : Choice("Glow") {
-
-        override val parent: ChoiceConfigurable
-            get() = modes
-
+    fun findRenderedEntities() = world.entities.filter {
+        (it is CreeperEntity || it is TntEntity)
+            && (it.isAlive || deadEntities)
     }
 
-    object OutlineMode : Choice("Outline") {
-        override val parent: ChoiceConfigurable
-            get() = modes
-
-        val width by float("Width", 3F, 0.5F..5F)
-    }
-
-    private fun getBaseColor(): Color4b {
-        return if (RainbowMode.isActive) rainbow() else StaticMode.color
-    }
-
-    fun getColor(entity: Entity): Color4b {
-        if (entity !is LivingEntity) {
-            return getBaseColor()
-        }
-
-        if (entity.hurtTime > 0) {
-            return Color4b(255, 0, 0)
-        }
-        if (entity is PlayerEntity && FriendManager.isFriend(entity)) {
-            return Color4b(0, 0, 255)
-        }
-
-        ModuleMurderMystery.getColor(entity)?.let { return it }
-
-        if (teamColor) {
-            getTeamColor(entity)?.let { return it }
-        }
-
-        return getBaseColor()
-    }
-
-    fun getTeamColor(entity: Entity): Color4b? {
-        val chars: CharArray = (entity.displayName ?: return null).string.toCharArray()
-        var color = Int.MAX_VALUE
-
-        val colors = "0123456789abcdef"
-
-        for (i in 0 until chars.size - 1) {
-            if (chars[i] != '§') {
-                continue
-            }
-
-            val index = colors.indexOf(chars[i + 1])
-
-            if (index !in 0..15) {
-                continue
-            }
-
-            color = ColorUtils.hexColors[index]
-            break
-        }
-
-        return Color4b(Color(color))
-    }
 
 }
