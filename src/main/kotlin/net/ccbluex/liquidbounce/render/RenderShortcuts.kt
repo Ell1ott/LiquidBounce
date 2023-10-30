@@ -37,6 +37,7 @@ import net.minecraft.util.math.Box
 import net.minecraft.util.math.Direction
 import net.minecraft.util.math.Vec3d
 import org.joml.Matrix4f
+import org.lwjgl.openal.EXTSourceRadius
 import java.nio.Buffer
 import kotlin.math.PI
 import kotlin.math.cos
@@ -382,6 +383,28 @@ val circlePoints =
         val theta = 2 * PI * it / CIRCLE_RES
         Vec3(cos(theta), 0.0, sin(theta))
     }
+
+
+fun RenderEnvironment.drawCircleOutline(
+    radius: Float
+) {
+    val matrix = matrixStack.peek().positionMatrix
+    val tessellator = RenderSystem.renderThreadTesselator()
+    val bufferBuilder = tessellator.buffer
+
+    // Set the shader to the position and color program
+    RenderSystem.setShader { GameRenderer.getPositionProgram() }
+
+    with(bufferBuilder) {
+        begin(DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION)
+
+        for (p in circlePoints) {
+            val point = p * radius
+            vertex(matrix, point.x, point.y, point.z).next()
+        }
+    }
+    tessellator.draw()
+}
 
 
 /**

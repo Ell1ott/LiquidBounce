@@ -18,6 +18,7 @@
  */
 package net.ccbluex.liquidbounce.features.module.modules.render
 
+import net.ccbluex.liquidbounce.config.Configurable
 import net.ccbluex.liquidbounce.event.WorldRenderEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
@@ -38,10 +39,32 @@ import net.minecraft.entity.mob.CreeperEntity
 
 object ModuleExplosion : Module("Explosion", Category.RENDER) {
 
-    private val innerColor by color("InnerColor", Color4b(0, 255, 4, 0))
-    private val outerColor by color("OuterColor", Color4b(0, 255, 4, 89))
+    private object Fused : Configurable("Fused") {
+        val outerColor by color("OuterColor", Color4b(255, 0, 0, 50))
+        val innerColor by color("InnerColor", Color4b(255, 0, 0, 0))
+    }
+
+    private object NotFused : Configurable("NotFused") {
+        val outerColor by color("OuterColor", Color4b(255, 153, 0, 50))
+        val innerColor by color("InnerColor", Color4b(255, 153, 0, 0))
+    }
+
+    init {
+        tree(Fused)
+        tree(NotFused)
+    }
+
+    private val range by int("Range", 20, 1..100).listen {
+        rangeSquared = it*it
+        it
+    }
+    private var rangeSquared: Int = range* range
+
+
 
     private val deadEntities by boolean("DeadEntities", false)
+
+
 
     val renderHandler = handler<WorldRenderEvent> { event ->
         val matrixStack = event.matrixStack
@@ -60,7 +83,20 @@ object ModuleExplosion : Module("Explosion", Category.RENDER) {
                     val pos = entity.interpolateCurrentPosition(event.partialTicks)
 
                     withPosition(pos) {
-                        drawGradientCircle(power.toFloat() * 2f, power.toFloat() * 1.5f, innerColor, outerColor)
+                        if(entity is CreeperEntity && entity.getClientFuseTime(event.partialTicks) <= 0) {
+                            drawGradientCircle(
+                                power.toFloat() * 2f,
+                                power.toFloat() * 1.5f,
+                                NotFused.outerColor,
+                                NotFused.innerColor)
+                        } else {
+                            drawGradientCircle(
+                                power.toFloat() * 2f,
+                                power.toFloat() * 1.5f,
+                                Fused.outerColor,
+                                Fused.innerColor)
+                        }
+
                     }
                 }
             }
@@ -71,6 +107,7 @@ object ModuleExplosion : Module("Explosion", Category.RENDER) {
     fun findRenderedEntities() = world.entities.filter {
         (it is CreeperEntity || it is TntEntity)
             && (it.isAlive || deadEntities)
+            && player.squaredDistanceTo(it) < rangeSquared
     }
 
 
