@@ -29,6 +29,7 @@ import net.ccbluex.liquidbounce.render.renderEnvironmentForWorld
 import net.ccbluex.liquidbounce.render.withPosition
 import net.ccbluex.liquidbounce.utils.entity.interpolateCurrentPosition
 import net.minecraft.entity.TntEntity
+import net.minecraft.entity.decoration.EndCrystalEntity
 import net.minecraft.entity.mob.CreeperEntity
 
 /**
@@ -48,6 +49,10 @@ object ModuleExplosion : Module("Explosion", Category.RENDER) {
         val outerColor by color("OuterColor", Color4b(255, 153, 0, 50))
         val innerColor by color("InnerColor", Color4b(255, 153, 0, 0))
     }
+
+    val creepers by boolean("Creepers", true)
+    val tnt by boolean("TNT", true)
+    val endCrystal by boolean("EndCrystal", false)
 
     init {
         tree(Fused)
@@ -69,16 +74,19 @@ object ModuleExplosion : Module("Explosion", Category.RENDER) {
     val renderHandler = handler<WorldRenderEvent> { event ->
         val matrixStack = event.matrixStack
 
-        val entitiesWithBoxes = findRenderedEntities().groupBy { entity ->
+        val entitiesWithBoxes = world.entities.groupBy { entity ->
+            if(player.squaredDistanceTo(entity) > rangeSquared) return@groupBy 0
             when(entity) {
-                is CreeperEntity -> 3
-                is TntEntity -> 4
+                is CreeperEntity -> if (creepers) 3 else 0
+                is TntEntity -> if (tnt) 4 else 0
+                is EndCrystalEntity -> if(endCrystal) 6 else 0
                 else -> 0
             }
         }
 
         renderEnvironmentForWorld(matrixStack) {
-            entitiesWithBoxes.forEach { power, entities ->
+            for ((power, entities) in entitiesWithBoxes) {
+                if (power == 0) continue
                 for (entity in entities) {
                     val pos = entity.interpolateCurrentPosition(event.partialTicks)
 
@@ -101,13 +109,6 @@ object ModuleExplosion : Module("Explosion", Category.RENDER) {
                 }
             }
         }
-    }
-
-
-    fun findRenderedEntities() = world.entities.filter {
-        (it is CreeperEntity || it is TntEntity)
-            && (it.isAlive || deadEntities)
-            && player.squaredDistanceTo(it) < rangeSquared
     }
 
 
