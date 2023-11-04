@@ -23,6 +23,7 @@ import net.ccbluex.liquidbounce.event.WorldRenderEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
+import net.ccbluex.liquidbounce.render.RenderEnvironment
 import net.ccbluex.liquidbounce.render.drawGradientCircle
 import net.ccbluex.liquidbounce.render.engine.Color4b
 import net.ccbluex.liquidbounce.render.renderEnvironmentForWorld
@@ -91,22 +92,29 @@ object ModuleExplosion : Module("Explosion", Category.RENDER) {
                     val pos = entity.interpolateCurrentPosition(event.partialTicks)
 
                     withPosition(pos) {
-                        if(entity is CreeperEntity && entity.getClientFuseTime(event.partialTicks) <= 0) {
-                            drawGradientCircle(
-                                power.toFloat() * 2f,
-                                power.toFloat() * 1.5f,
-                                NotFused.outerColor,
-                                NotFused.innerColor)
-                        } else {
-                            drawGradientCircle(
-                                power.toFloat() * 2f,
-                                power.toFloat() * 1.5f,
-                                Fused.outerColor,
-                                Fused.innerColor)
-                        }
+                        val isFused = entity is CreeperEntity && entity.getClientFuseTime(event.partialTicks) <= 0
+                        drawExplosionCircle(this, power, isFused)
 
                     }
                 }
+            }
+        }
+    }
+
+    private fun drawExplosionCircle(renderEnvironment: RenderEnvironment, power: Int, fused: Boolean) {
+        with(renderEnvironment) {
+            if(fused) {
+                drawGradientCircle(
+                    power.toFloat() * 2f,
+                    power.toFloat() * 1.5f,
+                    NotFused.outerColor,
+                    NotFused.innerColor)
+            } else {
+                drawGradientCircle(
+                    power.toFloat() * 2f,
+                    power.toFloat() * 1.5f,
+                    Fused.outerColor,
+                    Fused.innerColor)
             }
         }
     }
