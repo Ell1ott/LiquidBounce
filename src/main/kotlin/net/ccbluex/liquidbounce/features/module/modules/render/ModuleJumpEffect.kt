@@ -23,7 +23,7 @@ object ModuleJumpEffect : Module("JumpEffect", Category.RENDER) {
 
     private val animCurve by curve("AnimCurve", Curves.EASE_OUT)
 
-    private val hueOffsetAnim by int("hueOffsetAnim", 63, -360..360)
+    private val hueOffsetAnim by int("HueOffsetAnim", 63, -360..360)
 
     private val lifetime by int("Lifetime", 15, 1..30)
 
@@ -62,8 +62,8 @@ object ModuleJumpEffect : Module("JumpEffect", Category.RENDER) {
         return shiftHue(color, (hueOffsetAnim * progress).toInt())
     }
 
-    val onJump = handler<PlayerJumpEvent> { event ->
-        // Add new circle when the player jumps
+    val onJump = handler<PlayerJumpEvent> { _ ->
+        // Adds new circle when the player jumps
         circles.add(MutablePair(Vec3(player.pos), 0L))
     }
 

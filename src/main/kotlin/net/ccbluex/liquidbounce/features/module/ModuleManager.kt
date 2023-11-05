@@ -30,6 +30,7 @@ import net.ccbluex.liquidbounce.features.module.modules.`fun`.ModuleSkinDerp
 import net.ccbluex.liquidbounce.features.module.modules.misc.*
 import net.ccbluex.liquidbounce.features.module.modules.movement.*
 import net.ccbluex.liquidbounce.features.module.modules.movement.autododge.ModuleAutoDodge
+import net.ccbluex.liquidbounce.features.module.modules.movement.speed.ModuleSpeed
 import net.ccbluex.liquidbounce.features.module.modules.player.*
 import net.ccbluex.liquidbounce.features.module.modules.player.invcleaner.ModuleInventoryCleaner
 import net.ccbluex.liquidbounce.features.module.modules.render.*
@@ -121,6 +122,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleTeams,
             ModuleAutoChatGame,
             ModuleDebugRecorder,
+            ModuleCapeTransfer,
 
             // Movement
             ModuleAirJump,
@@ -186,9 +188,10 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleHoleESP,
             ModuleHud,
             ModuleItemESP,
+            ModuleJumpEffect,
             ModuleMobOwners,
             ModuleMurderMystery,
-            ModuleJumpEffect,
+            ModuleAttackEffects,
 
             // ModuleNametags,
             ModuleNoBob,

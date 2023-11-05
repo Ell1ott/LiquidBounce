@@ -27,7 +27,6 @@ import net.ccbluex.liquidbounce.render.engine.Vec3
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.minecraft.client.gl.ShaderProgram
 import net.minecraft.client.render.BufferBuilder
-import net.minecraft.client.render.BufferRenderer
 import net.minecraft.client.render.GameRenderer
 import net.minecraft.client.render.VertexFormat
 import net.minecraft.client.render.VertexFormat.DrawMode
@@ -37,11 +36,8 @@ import net.minecraft.util.math.Box
 import net.minecraft.util.math.Direction
 import net.minecraft.util.math.Vec3d
 import org.joml.Matrix4f
-import org.lwjgl.openal.EXTSourceRadius
-import java.nio.Buffer
 import kotlin.math.PI
 import kotlin.math.cos
-import kotlin.math.hypot
 import kotlin.math.sin
 
 /**
@@ -78,6 +74,7 @@ fun renderEnvironmentForWorld(matrixStack: MatrixStack, draw: RenderEnvironment.
     RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
     RenderSystem.disableBlend()
     RenderSystem.enableDepthTest()
+    RenderSystem.enableCull()
 }
 
 fun renderEnvironmentForGUI(matrixStack: MatrixStack = MatrixStack(), draw: RenderEnvironment.() -> Unit) {
@@ -100,8 +97,9 @@ fun RenderEnvironment.withPosition(pos: Vec3, draw: RenderEnvironment.() -> Unit
     with(matrixStack) {
         push()
         translate(pos.x, pos.y, pos.z)
-        draw()
-        pop()
+        try { draw() }
+        finally { pop() }
+
     }
 }
 
@@ -113,8 +111,20 @@ fun RenderEnvironment.withPosition(pos: Vec3, draw: RenderEnvironment.() -> Unit
  */
 fun RenderEnvironment.withColor(color4b: Color4b, draw: RenderEnvironment.() -> Unit) {
     RenderSystem.setShaderColor(color4b.r / 255f, color4b.g / 255f, color4b.b / 255f, color4b.a / 255f)
-    draw()
-    RenderSystem.setShaderColor(1f, 1f, 1f, 1f)
+    try { draw() }
+    finally { RenderSystem.setShaderColor(1f, 1f, 1f, 1f) }
+}
+
+/**
+ * Extension function to disable cull
+ * Good for rendering faces that should be visible from both sides
+ *
+ * @param draw The block of code to be executed with cull disabled.
+ */
+fun RenderEnvironment.withDisabledCull(draw: RenderEnvironment.() -> Unit) {
+    RenderSystem.disableCull()
+    try { draw() }
+    finally { RenderSystem.enableCull() }
 }
 
 /**
@@ -292,8 +302,9 @@ fun BufferBuilder.coloredTriangle(matrix: Matrix4f, p1: Vec3d, p2: Vec3d, p3: Ve
  *
  * @param box The bounding box of the side.
  * @param side The direction of the side.
+ * @param onlyOutline Determines if the function only should draw the outline of the [side] or only fill it in
  */
-fun RenderEnvironment.drawSideBox(box: Box, side: Direction) {
+fun RenderEnvironment.drawSideBox(box: Box, side: Direction, onlyOutline: Boolean = false){
     val matrix = matrixStack.peek().positionMatrix
     val tessellator = RenderSystem.renderThreadTesselator()
     val bufferBuilder = tessellator.buffer
@@ -303,8 +314,12 @@ fun RenderEnvironment.drawSideBox(box: Box, side: Direction) {
 
     // Draw the vertices of the box
     with(bufferBuilder) {
-        // Begin drawing lines with position format
-        begin(DrawMode.QUADS, VertexFormats.POSITION)
+        // Begin drawing lines or quads with position format
+        begin(
+            if (onlyOutline) DrawMode.DEBUG_LINE_STRIP
+                else DrawMode.QUADS,
+            VertexFormats.POSITION
+        )
 
         // Draw the vertices of the box
         val vertices = when (side) {
@@ -349,12 +364,23 @@ fun RenderEnvironment.drawSideBox(box: Box, side: Direction) {
         vertices.forEach { (x, y, z) ->
             vertex(matrix, x, y, z).next()
         }
+
+        if(onlyOutline){
+            vertex(matrix, vertices[0].x, vertices[0].y, vertices[0].z).next()
+
+        }
     }
 
     // Draw the outlined box
     tessellator.draw()
 }
 
+/**
+ * Function to render a gradient quad using specified [vertices] and [colors]
+ *
+ * @param vertices The four vectors to draw the quad
+ * @param colors The colors for the vertices
+ */
 fun RenderEnvironment.drawGradientQuad(vertices: List<Vec3>, colors: List<Color4b>) {
     require(vertices.size == 4 && colors.size == 4) { "lists must have exactly 4 elements" }
     val matrix = matrixStack.peek().positionMatrix
@@ -376,35 +402,13 @@ fun RenderEnvironment.drawGradientQuad(vertices: List<Vec3>, colors: List<Color4
     tessellator.draw()
 }
 
-const val CIRCLE_RES = 100
+const val CIRCLE_RES = 40
 // using a val instead of a function for better performance
 val circlePoints =
     (0..CIRCLE_RES).map {
         val theta = 2 * PI * it / CIRCLE_RES
         Vec3(cos(theta), 0.0, sin(theta))
     }
-
-
-fun RenderEnvironment.drawCircleOutline(
-    radius: Float
-) {
-    val matrix = matrixStack.peek().positionMatrix
-    val tessellator = RenderSystem.renderThreadTesselator()
-    val bufferBuilder = tessellator.buffer
-
-    // Set the shader to the position and color program
-    RenderSystem.setShader { GameRenderer.getPositionProgram() }
-
-    with(bufferBuilder) {
-        begin(DrawMode.DEBUG_LINE_STRIP, VertexFormats.POSITION)
-
-        for (p in circlePoints) {
-            val point = p * radius
-            vertex(matrix, point.x, point.y, point.z).next()
-        }
-    }
-    tessellator.draw()
-}
 
 
 /**
