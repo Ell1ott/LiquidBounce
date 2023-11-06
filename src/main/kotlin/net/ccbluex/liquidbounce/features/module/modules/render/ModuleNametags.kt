@@ -19,14 +19,17 @@
 package net.ccbluex.liquidbounce.features.module.modules.render
 
 import net.ccbluex.liquidbounce.event.EngineRenderEvent
+import net.ccbluex.liquidbounce.event.OverlayRenderEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.render.Fonts
+import net.ccbluex.liquidbounce.render.drawQuad
 import net.ccbluex.liquidbounce.render.engine.*
 import net.ccbluex.liquidbounce.render.engine.memory.IndexBuffer
 import net.ccbluex.liquidbounce.render.engine.memory.PositionColorVertexFormat
 import net.ccbluex.liquidbounce.render.engine.memory.VertexFormatComponentDataType
+import net.ccbluex.liquidbounce.render.renderEnvironmentForGUI
 import net.ccbluex.liquidbounce.render.shaders.ColoredPrimitiveShader
 import net.ccbluex.liquidbounce.utils.client.stripMinecraftColorCodes
 import net.ccbluex.liquidbounce.utils.combat.shouldBeShown
@@ -38,6 +41,7 @@ import net.minecraft.entity.Entity
 import net.minecraft.entity.EquipmentSlot
 import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.util.math.Vec3d
 import kotlin.math.roundToInt
 
 /**
@@ -57,7 +61,16 @@ object ModuleNametags : Module("Nametags", Category.RENDER) {
     private val borderValue by boolean("Border", true)
     private val scaleValue by float("Scale", 2F, 1F..4F)
 
-    val renderHandler = handler<EngineRenderEvent> { event ->
+    val renderHandler = handler<OverlayRenderEvent> { event ->
+
+        renderEnvironmentForGUI {
+            drawQuad(Vec3d(20.0, 20.0, 0.0), Vec3d(100.0, 100.0, 0.0))
+        }
+        val entity = world.entities.minByOrNull { it.distanceTo(player) }
+
+        return@handler
+
+
         val filteredEntities = world.entities.filter(ModuleNametags::shouldRenderNametag)
 
         if (filteredEntities.isEmpty()) {

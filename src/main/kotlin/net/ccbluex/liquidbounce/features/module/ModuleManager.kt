@@ -194,7 +194,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleMurderMystery,
             ModuleAttackEffects,
 
-            // ModuleNametags,
+            ModuleNametags,
             ModuleNoBob,
             ModuleNoFov,
             ModuleNoHurtCam,
