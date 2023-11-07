@@ -18,19 +18,18 @@
  */
 package net.ccbluex.liquidbounce.features.module.modules.render
 
-import net.ccbluex.liquidbounce.event.EngineRenderEvent
 import net.ccbluex.liquidbounce.event.OverlayRenderEvent
+import net.ccbluex.liquidbounce.event.WorldRenderEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
-import net.ccbluex.liquidbounce.render.Fonts
-import net.ccbluex.liquidbounce.render.drawQuad
+import net.ccbluex.liquidbounce.render.*
 import net.ccbluex.liquidbounce.render.engine.*
 import net.ccbluex.liquidbounce.render.engine.memory.IndexBuffer
 import net.ccbluex.liquidbounce.render.engine.memory.PositionColorVertexFormat
 import net.ccbluex.liquidbounce.render.engine.memory.VertexFormatComponentDataType
-import net.ccbluex.liquidbounce.render.renderEnvironmentForGUI
 import net.ccbluex.liquidbounce.render.shaders.ColoredPrimitiveShader
+import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.client.stripMinecraftColorCodes
 import net.ccbluex.liquidbounce.utils.combat.shouldBeShown
 import net.ccbluex.liquidbounce.utils.entity.box
@@ -41,6 +40,9 @@ import net.minecraft.entity.Entity
 import net.minecraft.entity.EquipmentSlot
 import net.minecraft.entity.LivingEntity
 import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.item.ItemStack
+import net.minecraft.item.Items
+import net.minecraft.util.math.Box
 import net.minecraft.util.math.Vec3d
 import kotlin.math.roundToInt
 
@@ -61,12 +63,37 @@ object ModuleNametags : Module("Nametags", Category.RENDER) {
     private val borderValue by boolean("Border", true)
     private val scaleValue by float("Scale", 2F, 1F..4F)
 
-    val renderHandler = handler<OverlayRenderEvent> { event ->
+    var mat4: Mat4 = Mat4();
 
-        renderEnvironmentForGUI {
-            drawQuad(Vec3d(20.0, 20.0, 0.0), Vec3d(100.0, 100.0, 0.0))
+    val worldRenderHandler = handler<WorldRenderEvent> { event ->
+        mat4 = Mat4(event.matrixStack.peek().positionMatrix)
+        renderEnvironmentForWorld(event.matrixStack) {
+            drawSolidBox(Box(0.0, 0.0, 0.0, 0.1, 0.1, 0.1))
         }
+
+    }
+    val renderHandler = handler<OverlayRenderEvent> { event ->
+        chat(mat4.toString())
         val entity = world.entities.minByOrNull { it.distanceTo(player) }
+
+        val width = event.context.scaledWindowWidth
+        val height = event.context.scaledWindowHeight
+        val offset = Vec3(0.0, 0.0, 0.0) - Vec3(mc.gameRenderer.camera.pos)
+        val vec4 = mat4 * Vec4(offset, 1f)
+        val newW: Float = 1.0f / vec4.w * 0.5f
+//        if(vec4.w >= 0)
+//            return@handler
+        renderEnvironmentForGUI {
+            drawQuad(Vec3d(20.0, 20.0, 0.0), Vec3d(40.0, height - 20.0, 0.0))
+
+            drawQuad(Vec3d(0.0, 0.0, 0.0), Vec3d((width - vec4.x * newW * width).toDouble(), (height - vec4.y * newW * height).toDouble(), 0.0))
+//            chat(vec4.toString())
+            event.context.drawItem(ItemStack(Items.POTATO), 40, 40, 10)
+
+//            chat(event.context.matrices.peek().normalMatrix.toString())
+
+
+        }
 
         return@handler
 

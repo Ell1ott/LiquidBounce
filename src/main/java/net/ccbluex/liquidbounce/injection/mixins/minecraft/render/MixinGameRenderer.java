@@ -45,6 +45,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RotationAxis;
 import net.minecraft.util.math.Vec3d;
+import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.objectweb.asm.Opcodes;
@@ -117,7 +118,7 @@ public abstract class MixinGameRenderer implements IMixinGameRenderer {
      * Hook world render event
      */
     @Inject(method = "renderWorld", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/GameRenderer;renderHand:Z", opcode = Opcodes.GETFIELD, ordinal = 0))
-    public void hookWorldRender(float partialTicks, long finishTimeNano, MatrixStack matrixStack, CallbackInfo callbackInfo) {
+    public void hookWorldRender(float tickDelta, long limitTime, MatrixStack matrices, CallbackInfo ci) {
         EventManager.INSTANCE.callEvent(new WorldRenderEvent(matrixStack, partialTicks));
     }
 
