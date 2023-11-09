@@ -20,6 +20,8 @@ package net.ccbluex.liquidbounce.features.module.modules.render
 
 import net.ccbluex.liquidbounce.config.Choice
 import net.ccbluex.liquidbounce.config.ChoiceConfigurable
+import net.ccbluex.liquidbounce.config.NamedChoice
+import net.ccbluex.liquidbounce.config.ToggleableConfigurable
 import net.ccbluex.liquidbounce.event.WorldRenderEvent
 import net.ccbluex.liquidbounce.event.handler
 import net.ccbluex.liquidbounce.features.misc.FriendManager
@@ -76,6 +78,23 @@ object ModuleTracers : Module("Tracers", Category.RENDER) {
     private object RainbowColor : Choice("Rainbow") {
         override val parent: ChoiceConfigurable
             get() = modes
+    }
+
+
+
+
+    private object MaxLines : ToggleableConfigurable(this, "MaxLines", false) {
+
+        val max by int("Max", 10, 1..100)
+
+        val mode by enumChoice("Mode", Mode.LIMIT, Mode.values())
+        enum class Mode(override val choiceName: String) : NamedChoice {
+            // Only draws traces to the closest entities
+            LIMIT("Limit"),
+
+            // Nice when you only want to use tracers to find those few last players.
+            DISABLE_ALL("DisableAll"),
+        }
     }
 
     val renderHandler = handler<WorldRenderEvent> { event ->
