@@ -36,7 +36,9 @@ import net.ccbluex.liquidbounce.utils.entity.*
 import net.ccbluex.liquidbounce.utils.item.InventoryTracker
 import net.ccbluex.liquidbounce.utils.item.openInventorySilently
 import net.ccbluex.liquidbounce.utils.kotlin.random
+import net.ccbluex.liquidbounce.utils.render.TargetRenderer
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen
+import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.enchantment.EnchantmentHelper
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityGroup
@@ -102,6 +104,9 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
 
     // Rotation
     private val rotations = tree(RotationsConfigurable())
+
+    // Target rendering
+    private val targetRenderer = tree(TargetRenderer(this))
 
     // Predict
     private val predict by floatRange("Predict", 0f..0f, 0f..5f)
@@ -200,9 +205,23 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
     val renderHandler = handler<WorldRenderEvent> { event ->
         val matrixStack = event.matrixStack
 
+        renderTarget(matrixStack, event.partialTicks)
+
+
+        renderFailedHits(matrixStack)
+    }
+
+    private fun renderTarget(matrixStack: MatrixStack, partialTicks: Float) {
+        val target = targetTracker.lockedOnTarget ?: return
+        renderEnvironmentForWorld(matrixStack) {
+            targetRenderer.render(this, target, partialTicks)
+        }
+    }
+
+    private fun renderFailedHits(matrixStack: MatrixStack) {
         if (failedHits.isEmpty() || (!NotifyWhenFail.enabled || !NotifyWhenFail.Box.isActive)) {
             failedHits.clear()
-            return@handler
+            return
         }
 
         failedHits.forEach { it.setRight(it.getRight() + 1) }
@@ -403,7 +422,7 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
     private fun updateEnemySelection() {
         val rangeSquared = range * range
 
-        targetTracker.validateLock { it.squaredBoxedDistanceTo(player) <= rangeSquared }
+        targetTracker.validateLock { it.squaredBoxedDistanceTo(player) <= rangeSquared && it.isAlive }
 
         val eyes = player.eyes
 
