@@ -132,10 +132,10 @@ class ChoiceConfigurable(
 /**
  * A mode is sub-module to separate different bypasses into extra classes
  */
-abstract class Choice(name: String) : Configurable(name), Listenable, NamedChoice {
+abstract class Choice(name: String, private val choice: ChoiceConfigurable) : Configurable(name), Listenable, NamedChoice {
 
     private val translationBaseKey: String
-        get() = "${this.parent.translationBaseKey}.choice.${name.toLowerCamelCase()}"
+        get() = "${choice.translationBaseKey}.choice.${name.toLowerCamelCase()}"
 
     val description: MutableText
         get() = Text.translatable("$translationBaseKey.description")
@@ -156,9 +156,9 @@ abstract class Choice(name: String) : Configurable(name), Listenable, NamedChoic
         get() = mc.networkHandler!!
 
     val isActive: Boolean
-        get() = this.parent.activeChoice === this
+        get() = choice.activeChoice === this
 
-    abstract val parent: ChoiceConfigurable
+//    abstract val parent: ChoiceConfigurable
 
     /**
      * Called when module is turned on
@@ -178,11 +178,11 @@ abstract class Choice(name: String) : Configurable(name), Listenable, NamedChoic
     /**
      * Parent listenable
      */
-    override fun parent() = this.parent.module
+    override fun parent() = choice.module
 
 }
 
 /**
  * Empty mode. It does nothing. Use it when you want a client-user to disable a feature.
  */
-class NoneChoice(override val parent: ChoiceConfigurable) : Choice("None")
+class NoneChoice(val parent: ChoiceConfigurable) : Choice("None", parent)
