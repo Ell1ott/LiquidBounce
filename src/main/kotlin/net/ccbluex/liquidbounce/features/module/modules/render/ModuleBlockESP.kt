@@ -36,6 +36,7 @@ import net.minecraft.block.BlockState
 import net.minecraft.block.Blocks
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
+import net.minecraft.util.math.Direction
 
 /**
  * BlockESP module
@@ -76,24 +77,24 @@ object ModuleBlockESP : Module("BlockESP", Category.RENDER) {
 
 
             renderEnvironmentForWorld(matrixStack) {
+                try {
+                    synchronized(BlockTracker.trackedBlockMap) {
+                        for (pos in BlockTracker.trackedBlockMap.keys) {
+                            val vec3 = Vec3(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble())
 
-                synchronized(BlockTracker.trackedBlockMap) {
-                    for (pos in BlockTracker.trackedBlockMap.keys) {
-                        val vec3 = Vec3(pos.x.toDouble(), pos.y.toDouble(), pos.z.toDouble())
+                            withPosition(vec3) {
 
-                        withPosition(vec3) {
-                            boxRenderer.drawBox(this, box, outline)
+                                val facesToInclude = Direction.values().map {
+                                    !BlockTracker.trackedBlockMap.containsKey(AbstractBlockLocationTracker.TargetBlockPos(pos.toBlockPos().offset(it)))
+                                }
+                                boxRenderer.drawBox(this, box, outline, facesToInclude)
 
+                            }
                         }
                     }
+                } finally {
+                    boxRenderer.draw(this, baseColor, outlineColor)
                 }
-
-                boxRenderer.draw(this, baseColor, outlineColor)
-
-
-
-
-
 
 
                 }

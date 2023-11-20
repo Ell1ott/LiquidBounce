@@ -34,7 +34,7 @@ class RenderBufferBuilder<I: VertexInputType>(
      *
      * @param box The bounding box of the box.
      */
-    fun drawBox(env: RenderEnvironment, box: Box, useOutlineVertices: Boolean = false) {
+    fun drawBox(env: RenderEnvironment, box: Box, facesToInclude: List<Boolean>, useOutlineVertices: Boolean = false) {
         val matrix = env.currentMvpMatrix
 
         val vertexPositions =
@@ -43,9 +43,17 @@ class RenderBufferBuilder<I: VertexInputType>(
             else
                 boxVertexPositions(box)
 
-        // Draw the vertices of the box
-        vertexPositions.forEach { (x, y, z) ->
-            bufferBuilder.vertex(matrix, x, y, z).next()
+        val boxVertices = boxVertexPositions(box)
+
+        for (face in 0 until 6) {
+            if (!facesToInclude[face]) continue
+
+            for (vertexIndex in (face * 4) until ((face * 4) + 4)) {
+
+                val (x, y, z) = boxVertices[vertexIndex]
+
+                bufferBuilder.vertex(matrix, x, y, z).next()
+            }
         }
     }
 
@@ -55,26 +63,31 @@ class RenderBufferBuilder<I: VertexInputType>(
             Vec3(box.maxX, box.minY, box.minZ),
             Vec3(box.maxX, box.minY, box.maxZ),
             Vec3(box.minX, box.minY, box.maxZ),
+
             Vec3(box.minX, box.maxY, box.minZ),
             Vec3(box.minX, box.maxY, box.maxZ),
             Vec3(box.maxX, box.maxY, box.maxZ),
             Vec3(box.maxX, box.maxY, box.minZ),
+
             Vec3(box.minX, box.minY, box.minZ),
             Vec3(box.minX, box.maxY, box.minZ),
             Vec3(box.maxX, box.maxY, box.minZ),
             Vec3(box.maxX, box.minY, box.minZ),
+
+            Vec3(box.minX, box.minY, box.maxZ),
+            Vec3(box.maxX, box.minY, box.maxZ),
+            Vec3(box.maxX, box.maxY, box.maxZ),
+            Vec3(box.minX, box.maxY, box.maxZ),
+
+            Vec3(box.minX, box.minY, box.minZ),
+            Vec3(box.minX, box.minY, box.maxZ),
+            Vec3(box.minX, box.maxY, box.maxZ),
+            Vec3(box.minX, box.maxY, box.minZ),
+
             Vec3(box.maxX, box.minY, box.minZ),
             Vec3(box.maxX, box.maxY, box.minZ),
             Vec3(box.maxX, box.maxY, box.maxZ),
             Vec3(box.maxX, box.minY, box.maxZ),
-            Vec3(box.minX, box.minY, box.maxZ),
-            Vec3(box.maxX, box.minY, box.maxZ),
-            Vec3(box.maxX, box.maxY, box.maxZ),
-            Vec3(box.minX, box.maxY, box.maxZ),
-            Vec3(box.minX, box.minY, box.minZ),
-            Vec3(box.minX, box.minY, box.maxZ),
-            Vec3(box.minX, box.maxY, box.maxZ),
-            Vec3(box.minX, box.maxY, box.minZ)
         )
         return vertices
     }
@@ -140,11 +153,16 @@ class BoxesRenderer {
             RenderBufferBuilder.TESSELATOR_B
     )
 
-    fun drawBox(env: RenderEnvironment, box: Box, outline: Boolean) {
-        faceRenderer.drawBox(env, box)
+    fun drawBox(
+        env: RenderEnvironment,
+        box: Box,
+        outline: Boolean,
+        facesToInclude: List<Boolean> = listOf(true, true, true, true, true, true)
+    ) {
+        faceRenderer.drawBox(env, box, facesToInclude, false)
         // This can still be optimized since there will be a lot of useless matrix muls...
         if(outline) {
-            outlinesRenderer.drawBox(env, box, true)
+            outlinesRenderer.drawBox(env, box, facesToInclude, true)
         }
     }
 

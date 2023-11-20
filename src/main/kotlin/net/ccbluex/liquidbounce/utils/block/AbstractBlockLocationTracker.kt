@@ -68,5 +68,7 @@ abstract class AbstractBlockLocationTracker<T> : ChunkScanner.BlockChangeSubscri
 
     data class TargetBlockPos(val x: Int, val y: Int, val z: Int) {
         constructor(pos: BlockPos) : this(pos.x, pos.y, pos.z)
+
+        fun toBlockPos() = BlockPos(x, y, z)
     }
 }
