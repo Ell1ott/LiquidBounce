@@ -375,17 +375,14 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
             }
 
             // Attack enemy according to cps and cooldown
-            val canAttack = {
-                cooldown.readyToAttack && (!ModuleCriticals.shouldWaitForCrit() ||
-                    choosenEntity.velocity.lengthSquared() > 0.25 * 0.25) &&
-                    (attackShielding || choosenEntity !is PlayerEntity || player.mainHandStack.item is AxeItem ||
-                        !choosenEntity.wouldBlockHit(
-                            player
-                        )) && !(isInInventoryScreen && !ignoreOpenInventory && !simulateInventoryClosing)
-            };
-            val clicks = cpsTimer.clicks(condition = canAttack, cps)
+            val clicks = cpsTimer.clicks({ checkIfReadyToAttack(choosenEntity) }, cps)
 
             if (clicks == 0) {
+                if (cpsTimer.isClickOnNextTick(AutoBlock.tickOff)) {
+                    AutoBlock.stopBlocking()
+                    return@repeatable
+                }
+
                 AutoBlock.startBlocking()
                 return@repeatable
             }
@@ -448,7 +445,6 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
     }
 
     private val legitAimpointTracker = LegitAimpointTracker(legitAimingConfigurable)
-    private var lastRotation: VecRotation? = null
 
     /**
      * Update enemy on target tracker
@@ -480,9 +476,16 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
 
             val box = target.box.offset(targetPrediction)
 
-            val rotationPreference =
-                this.lastRotation?.let { LeastDifferencePreference(it.rotation, basePoint = it.vec) }
-                    ?: LeastDifferencePreference.LEAST_DISTANCE_TO_CURRENT_ROTATION
+            val rotationPreference = if (this.legitAimingConfigurable.enabled) {
+                val aimpointChange = target.pos.subtract(target.prevPos)
+                    .subtract(player.pos.subtract(player.prevPos))
+
+                val nextPoint = this.legitAimpointTracker.nextPoint(box, box.center, aimpointChange)
+                LeastDifferencePreference(RotationManager.currentRotation ?: mc.player.rotation,
+                    nextPoint.aimSpot)
+            } else {
+                LeastDifferencePreference.LEAST_DISTANCE_TO_CURRENT_ROTATION
+            }
 
             // find best spot
             val spot = raytraceBox(
@@ -496,30 +499,25 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
             // lock on target tracker
             targetTracker.lock(target)
 
-            val nextPoint = if (this.legitAimingConfigurable.enabled) {
-                val aimpointChange = target.pos.subtract(target.prevPos).subtract(player.pos.subtract(player.prevPos))
-
-                val nextPoint = this.legitAimpointTracker.nextPoint(box, spot.vec, aimpointChange)
-
-                lastRotation = VecRotation(
-                    RotationManager.makeRotation(nextPoint.aimSpotWithoutNoise, eyes), nextPoint.aimSpotWithoutNoise
-                )
-
-                nextPoint.aimSpot
-            } else {
-                lastRotation = null
-
-                spot.vec
-            }
-
             // aim at target
             RotationManager.aimAt(
-                RotationManager.makeRotation(nextPoint, player.eyes),
+                spot.rotation,
                 openInventory = ignoreOpenInventory,
                 configurable = rotations
             )
             break
         }
+    }
+
+    fun checkIfReadyToAttack(choosenEntity: Entity): Boolean {
+        val critical = !ModuleCriticals.shouldWaitForCrit() || choosenEntity.velocity.lengthSquared() > 0.25 * 0.25
+        val shielding = attackShielding || choosenEntity !is PlayerEntity || player.mainHandStack.item is AxeItem ||
+            !choosenEntity.wouldBlockHit(player)
+        val isInInventoryScreen = InventoryTracker.isInventoryOpenServerSide
+            || mc.currentScreen is GenericContainerScreen
+
+        return cooldown.readyToAttack && critical && shielding && !(isInInventoryScreen && !ignoreOpenInventory
+            && !simulateInventoryClosing)
     }
 
     /**
@@ -540,17 +538,14 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
             if (!whileBlocking) {
                 return // return if it's not allowed to attack while using blocking with a shield
             }
-        } else if (player.isUsingItem && !whileUsingItem) {
-            return // return if it's not allowed to attack while the player is using another item that's not a shield
-        }
 
-        // Make sure to unblock now
-        if (player.isBlocking) {
             network.sendPacket(PlayerActionC2SPacket(PlayerActionC2SPacket.Action.RELEASE_USE_ITEM,
                 BlockPos.ORIGIN, Direction.DOWN))
             if (AutoBlock.tickOff > 0) {
                 wait(AutoBlock.tickOff)
             }
+        } else if (player.isUsingItem && !whileUsingItem) {
+            return // return if it's not allowed to attack while the player is using another item that's not a shield
         }
 
         attack()
@@ -558,7 +553,9 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
 
         if (simulateInventoryClosing && isInInventoryScreen) {
             openInventorySilently()
-        } else if (player.isBlocking) {
+        }
+
+        if (player.isBlocking) {
             if (AutoBlock.tickOn > 0) {
                 wait(AutoBlock.tickOn)
             }
