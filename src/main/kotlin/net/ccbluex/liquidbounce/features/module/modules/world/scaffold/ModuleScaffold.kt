@@ -20,11 +20,13 @@ package net.ccbluex.liquidbounce.features.module.modules.world.scaffold
 
 
 import com.viaversion.viaversion.api.connection.UserConnection
+import com.viaversion.viaversion.api.minecraft.Position
 import com.viaversion.viaversion.api.protocol.packet.PacketWrapper
 import com.viaversion.viaversion.api.type.Type
 import com.viaversion.viaversion.protocols.protocol1_12to1_11_1.Protocol1_12To1_11_1
+import com.viaversion.viaversion.protocols.protocol1_8.ServerboundPackets1_8
 import com.viaversion.viaversion.protocols.protocol1_9_3to1_9_1_2.ServerboundPackets1_9_3
-import com.viaversion.viaversion.protocols.protocol1_9To1_8.Protocol1_9To1_8
+import com.viaversion.viaversion.protocols.protocol1_9to1_8.Protocol1_9To1_8
 import io.netty.util.AttributeKey
 import net.ccbluex.liquidbounce.config.ToggleableConfigurable
 import net.ccbluex.liquidbounce.event.EventState
@@ -334,36 +336,6 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
                 ModuleScaffold::swing,
                 ModuleScaffold::swing,
             )
-
-            runCatching {
-                val isViaFabricPlusLoaded = AttributeKey.exists("viafabricplus-via-connection")
-
-                if (!isViaFabricPlusLoaded) {
-                    return@repeatable
-                }
-
-                val localViaConnection = AttributeKey.valueOf<UserConnection>("viafabricplus-via-connection")
-
-                val viaConnection =
-                    mc.networkHandler?.connection?.channel?.attr(localViaConnection)?.get() ?: return@repeatable
-
-                if (viaConnection.protocolInfo.pipeline.contains(Protocol1_9To1_8::class.java)) {
-                    val clientStatus = PacketWrapper.create(ServerboundPackets1_8.PLAYER_BLOCK_PLACEMENT, viaConnection)
-
-                    clientStatus.write(Type.POSITION, Position(-1, (-1).toShort(), -1))
-                    clientStatus.write(Type.UNSIGNED_BYTE, 255.toShort())
-
-                    clientStatus.write(Type.ITEM, Protocol1_9To1_8.getHandItem(viaConnection))
-
-                    clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
-                    clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
-                    clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
-
-                    runCatching {
-                        clientStatus.sendToServer(Protocol1_9To1_8::class.java)
-                    }
-                }
-            }
         }
 
         if (target == null || currentCrosshairTarget == null) {
@@ -427,6 +399,36 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
 
             swing
         })
+
+        runCatching {
+            val isViaFabricPlusLoaded = AttributeKey.exists("viafabricplus-via-connection")
+
+            if (!isViaFabricPlusLoaded) {
+                return@repeatable
+            }
+
+            val localViaConnection = AttributeKey.valueOf<UserConnection>("viafabricplus-via-connection")
+
+            val viaConnection =
+                mc.networkHandler?.connection?.channel?.attr(localViaConnection)?.get() ?: return@repeatable
+
+            if (viaConnection.protocolInfo.pipeline.contains(Protocol1_9To1_8::class.java)) {
+                val clientStatus = PacketWrapper.create(ServerboundPackets1_8.PLAYER_BLOCK_PLACEMENT, viaConnection)
+
+                clientStatus.write(Type.POSITION, Position(-1, (-1).toShort(), -1))
+                clientStatus.write(Type.UNSIGNED_BYTE, 255.toShort())
+
+                clientStatus.write(Type.ITEM, Protocol1_9To1_8.getHandItem(viaConnection))
+
+                clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
+                clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
+                clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
+
+                runCatching {
+                    clientStatus.sendToServer(Protocol1_9To1_8::class.java)
+                }
+            }
+        }
 
         if (wasInteractionSuccessful) {
             waitTicks(currentDelay)
