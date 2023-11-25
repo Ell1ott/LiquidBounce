@@ -330,12 +330,35 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
             ),
         ) {
             // By the time this reaches here, the variables are already non-null
-            ModuleNoFall.MLG.doPlacement(
-                currentCrosshairTarget!!,
-                suitableHand!!,
-                ModuleScaffold::swing,
-                ModuleScaffold::swing,
-            )
+            runCatching {
+                val isViaFabricPlusLoaded = AttributeKey.exists("viafabricplus-via-connection")
+
+                if (!isViaFabricPlusLoaded) {
+                    return@repeatable
+                }
+
+                val localViaConnection = AttributeKey.valueOf<UserConnection>("viafabricplus-via-connection")
+
+                val viaConnection =
+                    mc.networkHandler?.connection?.channel?.attr(localViaConnection)?.get() ?: return@repeatable
+
+                if (viaConnection.protocolInfo.pipeline.contains(Protocol1_9To1_8::class.java)) {
+                    val clientStatus = PacketWrapper.create(ServerboundPackets1_8.PLAYER_BLOCK_PLACEMENT, viaConnection)
+
+                    clientStatus.write(Type.POSITION, Position(-1, (-1).toShort(), -1))
+                    clientStatus.write(Type.UNSIGNED_BYTE, 255.toShort())
+
+                    clientStatus.write(Type.ITEM, Protocol1_9To1_8.getHandItem(viaConnection))
+
+                    clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
+                    clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
+                    clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
+
+                    runCatching {
+                        clientStatus.sendToServer(Protocol1_9To1_8::class.java)
+                    }
+                }
+            }
         }
 
         if (target == null || currentCrosshairTarget == null) {
@@ -400,35 +423,6 @@ object ModuleScaffold : Module("Scaffold", Category.WORLD) {
             swing
         })
 
-        runCatching {
-            val isViaFabricPlusLoaded = AttributeKey.exists("viafabricplus-via-connection")
-
-            if (!isViaFabricPlusLoaded) {
-                return@repeatable
-            }
-
-            val localViaConnection = AttributeKey.valueOf<UserConnection>("viafabricplus-via-connection")
-
-            val viaConnection =
-                mc.networkHandler?.connection?.channel?.attr(localViaConnection)?.get() ?: return@repeatable
-
-            if (viaConnection.protocolInfo.pipeline.contains(Protocol1_9To1_8::class.java)) {
-                val clientStatus = PacketWrapper.create(ServerboundPackets1_8.PLAYER_BLOCK_PLACEMENT, viaConnection)
-
-                clientStatus.write(Type.POSITION, Position(-1, (-1).toShort(), -1))
-                clientStatus.write(Type.UNSIGNED_BYTE, 255.toShort())
-
-                clientStatus.write(Type.ITEM, Protocol1_9To1_8.getHandItem(viaConnection))
-
-                clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
-                clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
-                clientStatus.write(Type.UNSIGNED_BYTE, 0.toShort())
-
-                runCatching {
-                    clientStatus.sendToServer(Protocol1_9To1_8::class.java)
-                }
-            }
-        }
 
         if (wasInteractionSuccessful) {
             waitTicks(currentDelay)
