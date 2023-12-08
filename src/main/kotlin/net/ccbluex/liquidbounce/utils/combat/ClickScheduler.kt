@@ -23,7 +23,7 @@ import net.ccbluex.liquidbounce.config.Configurable
 import net.ccbluex.liquidbounce.config.ToggleableConfigurable
 import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.features.module.modules.render.ModuleDebug
-import net.ccbluex.liquidbounce.utils.client.QuickAccess
+import net.ccbluex.liquidbounce.utils.client.player
 import net.ccbluex.liquidbounce.utils.kotlin.random
 import kotlin.math.roundToInt
 
@@ -40,10 +40,10 @@ import kotlin.math.roundToInt
  * We are simulating this behaviour by calculating how many times we could have been clicked in the meantime of a tick.
  * This allows us to predict future actions and behave accordingly.
  */
-class ClickScheduler<T>(val module: T, showCooldown: Boolean, name: String = "ClickScheduler") : Configurable(name)
-    where T: Module {
+class ClickScheduler<T>(val module: T, showCooldown: Boolean, maxCps: Int = 20, name: String = "ClickScheduler")
+    : Configurable(name) where T : Module {
 
-    private val cps by intRange("CPS", 5..8, 1..20)
+    private val cps by intRange("CPS", 5..8, 1..maxCps)
 
     class Cooldown<T>(module: T) : ToggleableConfigurable(module, "Cooldown", true)
         where T: Module {
@@ -54,8 +54,8 @@ class ClickScheduler<T>(val module: T, showCooldown: Boolean, name: String = "Cl
 
         fun readyToAttack(ticks: Int = 0) = !this.enabled || cooldownProgress(ticks) >= nextCooldown
 
-        fun cooldownProgress(ticks: Int = 0) = QuickAccess.player.getAttackCooldownProgress(
-            QuickAccess.player.attackCooldownProgressPerTick * ticks)
+        fun cooldownProgress(ticks: Int = 0) = player.getAttackCooldownProgress(
+            player.attackCooldownProgressPerTick * ticks)
 
         /**
          * Generates a new cooldown based on the range that was set by the user.
