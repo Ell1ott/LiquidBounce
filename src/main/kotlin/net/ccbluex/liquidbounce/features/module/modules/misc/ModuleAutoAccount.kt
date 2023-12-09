@@ -84,7 +84,7 @@ object ModuleAutoAccount : Module("AutoAccount", Category.MISC) {
         // cancel the previous sequence
         sequence?.cancel()
 
-        //start the new sequence
+        // start the new sequence
         sequence = Sequence(this, {
             waitUntil { mc.networkHandler != null }
             sync()

@@ -19,6 +19,7 @@
  */
 package net.ccbluex.liquidbounce.features.module.modules.combat
 
+import kotlinx.coroutines.currentCoroutineContext
 import net.ccbluex.liquidbounce.config.Choice
 import net.ccbluex.liquidbounce.config.ChoiceConfigurable
 import net.ccbluex.liquidbounce.config.NamedChoice
@@ -32,15 +33,22 @@ import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.features.module.modules.combat.ModuleKillAura.FailSwing.dealWithFakeSwing
 import net.ccbluex.liquidbounce.features.module.modules.combat.ModuleKillAura.RaycastMode.*
+import net.ccbluex.liquidbounce.features.module.modules.render.ModuleDebug
 import net.ccbluex.liquidbounce.render.*
 import net.ccbluex.liquidbounce.render.engine.Color4b
 import net.ccbluex.liquidbounce.render.engine.Vec3
 import net.ccbluex.liquidbounce.render.utils.rainbow
 import net.ccbluex.liquidbounce.utils.aiming.*
+import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.combat.*
 import net.ccbluex.liquidbounce.utils.entity.*
 import net.ccbluex.liquidbounce.utils.item.InventoryTracker
 import net.ccbluex.liquidbounce.utils.item.openInventorySilently
+import net.ccbluex.liquidbounce.utils.math.geometry.Line
+import net.ccbluex.liquidbounce.utils.math.minus
+import net.ccbluex.liquidbounce.utils.math.plus
+import net.ccbluex.liquidbounce.utils.math.times
+import net.ccbluex.liquidbounce.utils.math.toVec3
 import net.ccbluex.liquidbounce.utils.render.WorldTargetRenderer
 import net.minecraft.client.gui.screen.ingame.GenericContainerScreen
 import net.minecraft.client.util.math.MatrixStack
@@ -55,7 +63,10 @@ import net.minecraft.item.ItemStack
 import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket
+import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket
 import net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket
+import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket
 import net.minecraft.sound.SoundEvents
 import net.minecraft.util.Hand
 import net.minecraft.util.UseAction
@@ -67,6 +78,7 @@ import net.minecraft.util.math.Vec3d
 import net.minecraft.world.GameMode
 import org.apache.commons.lang3.RandomUtils
 import org.apache.commons.lang3.tuple.MutablePair
+import java.util.Collections
 import kotlin.math.sqrt
 import kotlin.random.Random
 
@@ -81,7 +93,7 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
     val clickScheduler = tree(ClickScheduler(this, true))
 
     // Range
-    private val range by float("Range", 4.2f, 1f..8f)
+    private val range by float("Range", 4.2f, 1f..100f)
     private val scanExtraRange by float("ScanExtraRange", 3.0f, 0.0f..7.0f)
 
     private val wallRange by float("WallRange", 3f, 0f..8f).listen {
@@ -161,7 +173,7 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
 
         private fun interactWithFront() {
             // Raycast using the current rotation and find a block or entity that should be interacted with
-            val rotationToTheServer = RotationManager.serverRotation
+            val rotationToTheServer = RotationManager.currentRotation ?: player.rotation
 
             val entity = raytraceEntity(range.toDouble(), rotationToTheServer, filter = {
                 when (raycast) {
@@ -606,12 +618,39 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
             }
         } else {
             if (interaction.currentGameMode != GameMode.SPECTATOR) {
-                player.attack(entity)
+                if (player.eyes.distanceTo(entity.pos) > 6) {
+                    chat("too far away")
+                    val startPos = player.pos
+                    val moveDir = (player.pos - entity.pos).normalize()
+                    val endPos = entity.pos + moveDir * 5.0
+                    packetTeleport(startPos, endPos, moveDir)
+                    network.sendPacket(PlayerInteractEntityC2SPacket.attack(entity, player.isSneaking))
+                    packetTeleport(endPos, startPos, moveDir * -1.0)
+
+
+
+
+                }
+                else {
+                    player.attack(entity)
+                }
             }
         }
 
         // reset cooldown
         player.resetLastAttackedTicks()
+    }
+
+    fun packetTeleport(from: Vec3d, to: Vec3d, moveDir: Vec3d) {
+        var currentPos = from
+        while (currentPos.distanceTo(to) > 4) {
+            currentPos -= moveDir * 4.0
+            ModuleDebug.debugGeometry(this, "nearEndBox", ModuleDebug.DebuggedBox(Box(currentPos, currentPos.add(0.1, 0.1, 0.1)), Color4b.RED ))
+            network.sendPacket(PlayerMoveC2SPacket.PositionAndOnGround(currentPos.x, currentPos.y, currentPos.z, false))
+        }
+        network.sendPacket(PlayerMoveC2SPacket.PositionAndOnGround(to.x, to.y, to.z, false))
+
+
     }
 
     private fun notifyForFailedHit(entity: Entity, rotation: Rotation) {

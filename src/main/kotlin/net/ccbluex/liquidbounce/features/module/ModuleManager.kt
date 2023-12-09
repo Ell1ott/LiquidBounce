@@ -94,6 +94,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
             ModuleAbortBreaking,
             ModuleAntiReducedDebugInfo,
             ModuleAntiVanish,
+            ModuleInfityReach,
             ModuleClip,
             ModuleDamage,
             ModuleDisabler,
