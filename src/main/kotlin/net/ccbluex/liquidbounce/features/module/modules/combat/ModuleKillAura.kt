@@ -623,13 +623,15 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
                     val startPos = player.pos
                     val moveDir = (player.pos - entity.pos).normalize()
                     val endPos = entity.pos + moveDir * 5.0
+
+                    if (world.getBlockCollisions(entity, player.boundingBox.stretch(endPos - startPos)).any()) {
+                        chat("cant packet tp")
+                        return
+                    }
+
                     packetTeleport(startPos, endPos, moveDir)
                     network.sendPacket(PlayerInteractEntityC2SPacket.attack(entity, player.isSneaking))
                     packetTeleport(endPos, startPos, moveDir * -1.0)
-
-
-
-
                 }
                 else {
                     player.attack(entity)
@@ -643,8 +645,10 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
 
     fun packetTeleport(from: Vec3d, to: Vec3d, moveDir: Vec3d) {
         var currentPos = from
-        while (currentPos.distanceTo(to) > 4) {
-            currentPos -= moveDir * 4.0
+        while (currentPos.distanceTo(to) > 8) {
+//            val moveDir = (player.pos - currentPos).normalize()
+
+            currentPos -= moveDir * 8.0
             ModuleDebug.debugGeometry(this, "nearEndBox", ModuleDebug.DebuggedBox(Box(currentPos, currentPos.add(0.1, 0.1, 0.1)), Color4b.RED ))
             network.sendPacket(PlayerMoveC2SPacket.PositionAndOnGround(currentPos.x, currentPos.y, currentPos.z, false))
         }
