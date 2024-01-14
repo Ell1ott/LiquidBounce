@@ -179,7 +179,7 @@ object ModuleSmartEat : Module("SmartEat", Category.PLAYER) {
             KeyBinding.setKeyPressed(mc.options.useKey.boundKey, true)
 
 
-            }
+        }
     }
 
 
