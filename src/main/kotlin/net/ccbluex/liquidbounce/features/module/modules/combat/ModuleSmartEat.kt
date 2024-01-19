@@ -53,41 +53,45 @@ object ModuleSmartEat : Module("SmartEat", Category.PLAYER) {
 
     private val swapBackDelay by int("SwapBackDelay", 5, 1..20)
 
-    private val preferGappleHealth by float("PreferGappleHealth", 9f, 0f..20f)
-    private val preferNotchAppleHealth by float("PreferNotchAppleHealth", 2f, 0f..20f)
-    private val preferHealthPotHealth by float("PreferHealthPotHealth", 12f, 0f..20f)
+    private val preferGappleHealth by float("MaxPreferGappleHealth", 9f, 0f..20f)
+    private val preferNotchAppleHealth by float("MaxPreferNotchAppleHealth", 2f, 0f..20f)
+    private val preferHealthPotHealth by float("MaxPreferHealthPotHealth", 12f, 0f..20f)
 
     private var prefersGapples = false
     private var prefersNotchApple = false
     private var prefersHealthPot = false
     private val food: Pair<Int, ItemStack>?
         get() = Hotbar.findBestItem(0) { _, itemStack ->
-            val item = itemStack.item
-
-            if (prefersHealthPot && item == Items.POTION) {
-                val hasHealthEffect =
-                    PotionUtil.getPotionEffects(itemStack).any {
-                        it.effectType == StatusEffects.INSTANT_HEALTH
-                    }
-
-                if (hasHealthEffect)
-                    return@findBestItem 100 - preferHealthPotHealth.toInt()
-            }
-
-            val foodComp = item.foodComponent ?: return@findBestItem -1
-
-            val hasHungerEffect = foodComp.statusEffects.any { it.first.effectType == StatusEffects.HUNGER }
-            if (hasHungerEffect)
-                return@findBestItem 0
-
-            if(prefersGapples && item == Items.GOLDEN_APPLE)
-                return@findBestItem 100 - preferGappleHealth.toInt()
-
-            if (prefersNotchApple && item == Items.ENCHANTED_GOLDEN_APPLE)
-                return@findBestItem 100 - preferNotchAppleHealth.toInt()
-
-            foodComp.hunger
+            getItemScore(itemStack)
         }
+
+    private fun getItemScore(itemStack: ItemStack): Int {
+        val item = itemStack.item
+
+        if (prefersHealthPot && item == Items.POTION) {
+            val hasHealthEffect =
+                PotionUtil.getPotionEffects(itemStack).any {
+                    it.effectType == StatusEffects.INSTANT_HEALTH
+                }
+
+            if (hasHealthEffect)
+                return 100 - preferHealthPotHealth.toInt()
+        }
+
+        val foodComp = item.foodComponent ?: return -1
+
+        val hasHungerEffect = foodComp.statusEffects.any { it.first.effectType == StatusEffects.HUNGER }
+        if (hasHungerEffect)
+            return 0
+
+        if(prefersGapples && item == Items.GOLDEN_APPLE)
+            return 100 - preferGappleHealth.toInt()
+
+        if (prefersNotchApple && item == Items.ENCHANTED_GOLDEN_APPLE)
+            return 100 - preferNotchAppleHealth.toInt()
+
+        foodComp.hunger
+    }
 
     val tickHandler = repeatable {
         prefersGapples = player.health <= preferGappleHealth
