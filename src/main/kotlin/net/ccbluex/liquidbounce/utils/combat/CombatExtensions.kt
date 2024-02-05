@@ -38,6 +38,7 @@ import net.ccbluex.liquidbounce.utils.entity.eyes
 import net.ccbluex.liquidbounce.utils.entity.squaredBoxedDistanceTo
 import net.ccbluex.liquidbounce.utils.kotlin.toDouble
 import net.ccbluex.liquidbounce.utils.math.minus
+import net.ccbluex.liquidbounce.utils.math.plus
 import net.ccbluex.liquidbounce.utils.math.times
 import net.minecraft.client.network.AbstractClientPlayerEntity
 import net.minecraft.client.world.ClientWorld

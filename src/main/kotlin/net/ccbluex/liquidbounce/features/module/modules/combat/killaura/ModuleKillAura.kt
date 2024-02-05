@@ -70,7 +70,7 @@ object ModuleKillAura : Module("KillAura", Category.COMBAT) {
     val clickScheduler = tree(ClickScheduler(this, true))
 
     // Range
-    internal val range by float("Range", 4.2f, 1f..8f)
+    internal val range by float("Range", 4.2f, 1f..50f)
     private val scanExtraRange by float("ScanExtraRange", 3.0f, 0.0f..7.0f)
 
     internal val wallRange by float("WallRange", 3f, 0f..8f).listen {
