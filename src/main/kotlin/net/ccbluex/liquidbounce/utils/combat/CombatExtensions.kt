@@ -27,12 +27,18 @@ import net.ccbluex.liquidbounce.features.module.modules.combat.ModuleCriticals
 import net.ccbluex.liquidbounce.features.module.modules.misc.ModuleFocus
 import net.ccbluex.liquidbounce.features.module.modules.misc.ModuleTeams
 import net.ccbluex.liquidbounce.features.module.modules.misc.antibot.ModuleAntiBot
+import net.ccbluex.liquidbounce.features.module.modules.render.ModuleDebug
 import net.ccbluex.liquidbounce.features.module.modules.render.ModuleMurderMystery
+import net.ccbluex.liquidbounce.render.engine.Color4b
+import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.client.interaction
 import net.ccbluex.liquidbounce.utils.client.isOldCombat
 import net.ccbluex.liquidbounce.utils.client.mc
+import net.ccbluex.liquidbounce.utils.entity.eyes
 import net.ccbluex.liquidbounce.utils.entity.squaredBoxedDistanceTo
 import net.ccbluex.liquidbounce.utils.kotlin.toDouble
+import net.ccbluex.liquidbounce.utils.math.minus
+import net.ccbluex.liquidbounce.utils.math.times
 import net.minecraft.client.network.AbstractClientPlayerEntity
 import net.minecraft.client.world.ClientWorld
 import net.minecraft.enchantment.EnchantmentHelper
@@ -45,6 +51,7 @@ import net.minecraft.entity.mob.Monster
 import net.minecraft.entity.passive.PassiveEntity
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket
 import net.minecraft.sound.SoundEvents
 import net.minecraft.util.Hand
 import net.minecraft.util.math.Box
@@ -205,6 +212,20 @@ fun Entity.attack(swing: Boolean, keepSprint: Boolean = false) {
 
     network.sendPacket(PlayerInteractEntityC2SPacket.attack(this, player.isSneaking))
 
+    fun packetTeleport(from: Vec3d, to: Vec3d, moveDir: Vec3d) {
+        var currentPos = from
+        while (currentPos.distanceTo(to) > 8) {
+//            val moveDir = (player.pos - currentPos).normalize()
+
+            currentPos -= moveDir * 8.0
+            ModuleDebug.debugGeometry(this, "nearEndBox", ModuleDebug.DebuggedBox(Box(currentPos, currentPos.add(0.1, 0.1, 0.1)), Color4b.RED ))
+            network.sendPacket(PlayerMoveC2SPacket.PositionAndOnGround(currentPos.x, currentPos.y, currentPos.z, false))
+        }
+        network.sendPacket(PlayerMoveC2SPacket.PositionAndOnGround(to.x, to.y, to.z, false))
+
+
+    }
+
     if (keepSprint) {
         var genericAttackDamage = player.getAttributeValue(EntityAttributes.GENERIC_ATTACK_DAMAGE).toFloat()
         var magicAttackDamage = EnchantmentHelper.getAttackDamage(player.mainHandStack,
@@ -228,8 +249,26 @@ fun Entity.attack(swing: Boolean, keepSprint: Boolean = false) {
             player.addCritParticles(this)
         }
     } else {
+
         if (interaction.currentGameMode != GameMode.SPECTATOR) {
-            player.attack(this)
+            if (player.eyes.distanceTo(this.pos) > 6) {
+                chat("too far away")
+                val startPos = player.pos
+                val moveDir = (player.pos - this.pos).normalize()
+                val endPos = this.pos + moveDir * 5.0
+
+                if (world.getBlockCollisions(this, player.boundingBox.stretch(endPos - startPos)).any()) {
+                    chat("cant packet tp")
+                    return
+                }
+
+                packetTeleport(startPos, endPos, moveDir)
+                network.sendPacket(PlayerInteractEntityC2SPacket.attack(this, player.isSneaking))
+                packetTeleport(endPos, startPos, moveDir * -1.0)
+            }
+            else {
+                player.attack(this)
+            }
         }
     }
 
@@ -240,4 +279,6 @@ fun Entity.attack(swing: Boolean, keepSprint: Boolean = false) {
     if (swing && !isOldCombat) {
         player.swingHand(Hand.MAIN_HAND)
     }
+
+
 }
