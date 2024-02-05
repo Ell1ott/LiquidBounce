@@ -252,14 +252,15 @@ fun Entity.attack(swing: Boolean, keepSprint: Boolean = false) {
     } else {
 
         if (interaction.currentGameMode != GameMode.SPECTATOR) {
+
             if (player.eyes.distanceTo(this.pos) > 6) {
-                chat("too far away")
+
                 val startPos = player.pos
                 val moveDir = (player.pos - this.pos).normalize()
                 val endPos = this.pos + moveDir * 5.0
 
                 if (world.getBlockCollisions(this, player.boundingBox.stretch(endPos - startPos)).any()) {
-                    chat("cant packet tp")
+
                     return
                 }
 

@@ -25,6 +25,7 @@ import net.ccbluex.liquidbounce.event.repeatable
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.features.module.modules.combat.ModuleAutoClicker.Left.isWeaponSelected
+import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.combat.ClickScheduler
 import net.ccbluex.liquidbounce.utils.combat.shouldBeAttacked
 import net.minecraft.client.option.KeyBinding
@@ -47,6 +48,7 @@ object ModuleAutoClicker : Module("AutoClicker", Category.COMBAT) {
         val clickScheduler = tree(ClickScheduler(ModuleAutoClicker, true))
 
         private val objectiveType by enumChoice("Objective", ObjectiveType.ANY, ObjectiveType.values())
+        val onlyWhilstClicking by boolean("OnlyWhilstClicking", true)
         private val onItemUse by enumChoice("OnItemUse", Use.WAIT, Use.values())
         private val weapon by enumChoice("Weapon", Weapon.ANY, Weapon.values())
         private val delayPostStopUse by int("DelayPostStopUse", 0, 0..20, "ticks")
@@ -138,7 +140,7 @@ object ModuleAutoClicker : Module("AutoClicker", Category.COMBAT) {
 
     val tickHandler = repeatable {
         Left.run {
-            if (!enabled || !attack || !isWeaponSelected() || !isOnObjective()) {
+            if (!enabled || (!attack && onlyWhilstClicking)  || !isWeaponSelected() || !isOnObjective()) {
                 return@run
             }
 
@@ -153,7 +155,6 @@ object ModuleAutoClicker : Module("AutoClicker", Category.COMBAT) {
                     return@repeatable
                 }
             }
-
             clickScheduler.clicks {
                 KeyBinding.onKeyPressed(mc.options.attackKey.boundKey)
                 true
