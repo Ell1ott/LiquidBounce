@@ -44,7 +44,7 @@
     }
 
     &:not([disabled]):hover {
-      background-color: darken(desaturate($accent-color, 30%), 10%);
+      background-color: color-mix(in srgb, (hsl(from $accent-color h s calc(l * 0.9), var(--base-color), 55%);
       cursor: pointer;
 
       &.secondary {

@@ -15,6 +15,8 @@
     import ProxyManager from "./routes/menu/proxymanager/ProxyManager.svelte";
     import None from "./routes/none/None.svelte";
     import Disconnected from "./routes/menu/disconnected/Disconnected.svelte";
+    import type {themeColorChangeEvent} from "./integration/events";
+    import {intToRgba, rgbaToHex} from "./integration/util";
 
     const routes = {
         "/clickgui": ClickGui,
@@ -37,7 +39,7 @@
 
     // HACK: Just in case
     setTimeout(() => {
-       showSplash = false;
+        showSplash = false;
     }, 10 * 1000);
 
     async function changeRoute(name: string) {
@@ -79,6 +81,10 @@
                     await changeRoute(event.screenName || "none");
                     break;
             }
+        });
+
+        listenAlways("themeColorChange", async (event: themeColorChangeEvent) => {
+            document.documentElement.style.setProperty("--" + event.name, rgbaToHex(intToRgba(event.value)));
         });
 
         const virtualScreen = await getVirtualScreen();

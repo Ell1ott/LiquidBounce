@@ -37,7 +37,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: darken($menu-text-color, 55%);
+    background-color: color-mix(in srgb, $menu-text-color, $menu-base-color, 55%);
     transition: ease 0.4s;
     height: 14px;
     border-radius: 10px;

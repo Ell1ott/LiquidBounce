@@ -1,28 +1,28 @@
 @import "../../../colors.scss";
 
 .noUi-handle {
-    background-color: $accent-color;
-    box-shadow: unset;
-    border: none;
-    border-radius: 50%;
-    height: 12px !important;
-    width: 12px !important;
-    transform: translate(-5px, 1px);
+  background-color: $accent-color;
+  box-shadow: unset;
+  border: none;
+  border-radius: 50%;
+  height: 12px !important;
+  width: 12px !important;
+  transform: translate(-5px, 1px);
 }
 
 .noUi-handle::after,
 .noUi-handle::before {
-    display: none;
+  display: none;
 }
 
 .noUi-target {
-    margin: 10px 0;
-    height: 2px;
-    border: none;
-    background-color: darken($clickgui-text-color, 80%);
-    box-shadow: unset;
+  margin: 10px 0;
+  height: 2px;
+  border: none;
+  background-color: color-mix(in srgb, $clickgui-text-color, $clickgui-base-color, 80%);
+  box-shadow: unset;
 }
 
 .noUi-connect {
-    background-color: $accent-color;
+  background-color: $accent-color;
 }
