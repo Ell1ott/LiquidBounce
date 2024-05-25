@@ -20,7 +20,8 @@
 </script>
 
 <svelte:window on:keydown={handleKeyDown}/>
-<button class="button-setting" class:inset type="button" on:click={() => dispatch("click")} {disabled} class:secondary>{title}</button>
+<button class="button-setting" class:inset type="button" on:click={() => dispatch("click")} {disabled}
+        class:secondary>{title}</button>
 
 <style lang="scss">
   @import "../../../../colors.scss";
@@ -44,11 +45,11 @@
     }
 
     &:not([disabled]):hover {
-      background-color: color-mix(in srgb, (hsl(from $accent-color h s calc(l * 0.9), var(--base-color), 55%);
+      background-color: color-mix(in srgb, hsl(from $accent-color h s calc(l * 0.9), var(--base-color), 30%));
       cursor: pointer;
 
       &.secondary {
-        background-color: darken(desaturate($menu-base-color, 30%), 10%);
+        background-color: color-mix(in srgb, hsl(from $menu-base-color h s calc(l * 0.9), var(--base-color), 30%));
       }
     }
 

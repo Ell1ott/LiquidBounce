@@ -69,10 +69,7 @@
     }
 
     input:checked + .slider {
-      background-color: color.scale(
-                      desaturate($accent-color, 60%),
-              $lightness: -15%
-      );
+      background-color: color-mix(in srgb, hsl(from $accent-color h s calc(l * 0.9), var(--base-color), 15%));
     }
 
     input:checked + .slider:before {
