@@ -1,34 +1,34 @@
-$accent-color: #4677ff;
+$accent-color: var(--accent-color);
 
-$clickgui-base-color: black;
-$clickgui-text-color: white;
-$clickgui-text-dimmed-color: rgba(211, 211, 211, 255);
+$clickgui-base-color: var(--base-color);
+$clickgui-text-color: var(--text-color);
+$clickgui-text-dimmed-color: var(--text-dimmed-color);
 
-$tabgui-base-color: black;
-$tabgui-text-color: white;
-$tabgui-text-dimmed-color: rgba(211, 211, 211, 255);
+$tabgui-base-color: var(--base-color);
+$tabgui-text-color: var(--text-color);
+$tabgui-text-dimmed-color: var(--text-dimmed-color);
 
-$arraylist-base-color: black;
-$arraylist-text-color: white;
+$arraylist-base-color: var(--base-color);
+$arraylist-text-color: var(--text-color);
 
-$targethud-base-color: black;
-$targethud-text-color: white;
-$targethud-text-dimmed-color: rgba(211, 211, 211, 255);
+$targethud-base-color: var(--base-color);
+$targethud-text-color: var(--text-color);
+$targethud-text-dimmed-color: var(--text-dimmed-color);
 
-$hotbar-base-color: black;
-$hotbar-text-color: white;
+$hotbar-base-color: var(--base-color);
+$hotbar-text-color: var(--text-color);
 /* TODO: currently unused */
-$hotbar-experience-color: #88C657;
-$hotbar-health-color: #FC4130;
-$hotbar-hunger-color: #B88458;
+$hotbar-experience-color: #88c657;
+$hotbar-health-color: #fc4130;
+$hotbar-hunger-color: #b88458;
 
-$menu-account-premium-color: #67D24A;
-$menu-base-color: black;
-$menu-text-color: white;
-$menu-text-dimmed-color: rgba(211, 211, 211, 255);
+$menu-account-premium-color: #67d24a;
+$menu-base-color: var(--base-color);
+$menu-text-color: var(--text-color);
+$menu-text-dimmed-color: var(--text-dimmed-color);
 $menu-error-color: #fc4130;
 
-$scoreboard-base-color: black;
+$scoreboard-base-color: var(--base-color);
 
-$keystrokes-base-color: black;
-$keystrokes-text-color: white;
+$keystrokes-base-color: var(--base-color);
+$keystrokes-text-color: var(--text-color);
