@@ -25,6 +25,7 @@ import net.ccbluex.liquidbounce.config.Value
 import net.ccbluex.liquidbounce.event.Event
 import net.ccbluex.liquidbounce.features.chat.packet.User
 import net.ccbluex.liquidbounce.features.misc.ProxyManager
+import net.ccbluex.liquidbounce.render.engine.Color4b
 import net.ccbluex.liquidbounce.utils.client.Nameable
 import net.ccbluex.liquidbounce.utils.entity.SimulatedPlayer
 import net.ccbluex.liquidbounce.utils.inventory.InventoryAction
@@ -39,7 +40,11 @@ import net.minecraft.world.GameMode
 
 @Nameable("clickGuiScaleChange")
 @WebSocketEvent
-class ClickGuiScaleChangeEvent(val value: Float): Event()
+class ClickGuiScaleChangeEvent(val value: Float) : Event()
+
+@Nameable("themeColorChange")
+@WebSocketEvent
+class ThemeColorChangeEvent(val name: String, val value: Color4b) : Event()
 
 @Nameable("spaceSeperatedNamesChange")
 @WebSocketEvent
@@ -84,14 +89,19 @@ class ClientChatStateChange(val state: State) : Event() {
     enum class State {
         @SerializedName("connecting")
         CONNECTING,
+
         @SerializedName("connected")
         CONNECTED,
+
         @SerializedName("logon")
         LOGGING_IN,
+
         @SerializedName("loggedIn")
         LOGGED_IN,
+
         @SerializedName("disconnected")
         DISCONNECTED,
+
         @SerializedName("authenticationFailed")
         AUTHENTICATION_FAILED,
     }
@@ -103,6 +113,7 @@ class ClientChatMessageEvent(val user: User, val message: String, val chatGroup:
     enum class ChatGroup {
         @SerializedName("public")
         PUBLIC_CHAT,
+
         @SerializedName("private")
         PRIVATE_CHAT
     }
@@ -146,6 +157,7 @@ class VirtualScreenEvent(val screenName: String, val action: Action) : Event() {
     enum class Action {
         @SerializedName("open")
         OPEN,
+
         @SerializedName("close")
         CLOSE
     }
@@ -183,8 +195,10 @@ class ScheduleInventoryActionEvent(
 
     fun schedule(constrains: InventoryConstraints, action: InventoryAction) =
         schedule.add(InventoryActionChain(constrains, arrayOf(action)))
+
     fun schedule(constrains: InventoryConstraints, vararg actions: InventoryAction) =
         this.schedule.add(InventoryActionChain(constrains, actions))
+
     fun schedule(constrains: InventoryConstraints, actions: List<InventoryAction>) =
         this.schedule.add(InventoryActionChain(constrains, actions.toTypedArray()))
 
