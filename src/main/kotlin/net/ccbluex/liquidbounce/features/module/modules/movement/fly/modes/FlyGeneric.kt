@@ -115,9 +115,12 @@ internal object FlyCreative : Choice("Creative") {
         player.abilities.allowFlying = true;
     }
 
+    var ticksSinceSend = 0
+    var currentOffset: Double = 0
+
     private fun shouldFlyDown(): Boolean {
         if (!bypassVanillaCheck) return false
-        if (player.age % 40 != 0) return false
+//        if (player.age % 2 != 0) return false
 
         // check if the player is above a block or in mid-air
         // if the player is right above a block, we don't need to fly down
@@ -136,15 +139,19 @@ internal object FlyCreative : Choice("Creative") {
             player.velocity = player.velocity.normalize().multiply(maxVelocity.toDouble())
         }
 
-        if (shouldFlyDown()) {
+
+        currentOffset = if (player.age % 4 < 2) -0.4 else 0.0
+
+        ticksSinceSend++
+        if (ticksSinceSend > 10 && shouldFlyDown()) {
             network.sendPacket(MovePacketType.POSITION_AND_ON_GROUND.generatePacket())
         }
 
     }
 
     val packetHandler = handler<PacketEvent> { event ->
-        if (shouldFlyDown() && event.packet is PlayerMoveC2SPacket) {
-            event.packet.y = player.lastBaseY - 0.04
+        if (ticksSinceSend > 5 && event.packet is PlayerMoveC2SPacket) {
+            event.packet.y = player.lastBaseY - currentOffset
         }
     }
 
