@@ -37,8 +37,10 @@ import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.entity.strafe
 import net.minecraft.block.FluidBlock
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket.LookAndOnGround
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket
 import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket
+import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket
 import net.minecraft.util.shape.VoxelShapes
 
 internal object FlyVanilla : Choice("Vanilla") {
@@ -143,8 +145,17 @@ internal object FlyCreative : Choice("Creative") {
     }
 
     val packetHandler = handler<PacketEvent> { event ->
-        if (shouldFlyDown() && event.packet is PlayerMoveC2SPacket) {
-            event.packet.y = player.lastBaseY - 0.04
+        if (shouldFlyDown()) {
+            if (event.packet is PlayerMoveC2SPacket) {
+                if (event.packet is LookAndOnGround) {
+                    network.sendPacket(
+                        MovePacketType.FULL.generatePacket().apply { y = player.lastBaseY - 0.04 })
+                    event.cancelEvent()
+                    return@handler
+                }
+                event.packet.y = player.lastBaseY - 0.04
+            }
+
         }
     }
 
