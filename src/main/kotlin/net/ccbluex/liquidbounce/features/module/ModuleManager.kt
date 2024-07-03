@@ -153,6 +153,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
 
             // Misc
             ModuleAntiBot,
+            ModuleBetterChat,
             ModuleFriendClicker,
             ModuleKeepChatAfterDeath,
             ModuleNameProtect,
@@ -166,6 +167,7 @@ object ModuleManager : Listenable, Iterable<Module> by modules {
 
             // Movement
             ModuleAirJump,
+            ModuleAntiBounce,
             ModuleAntiLevitation,
             ModuleAutoDodge,
             ModuleAvoidHazards,

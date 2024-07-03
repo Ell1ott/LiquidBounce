@@ -18,6 +18,9 @@
  */
 package net.ccbluex.liquidbounce.features.module.modules.movement.speed
 
+import net.ccbluex.liquidbounce.config.Choice
+import net.ccbluex.liquidbounce.config.ChoiceConfigurable
+import net.ccbluex.liquidbounce.config.ToggleableConfigurable
 import net.ccbluex.liquidbounce.features.module.Category
 import net.ccbluex.liquidbounce.features.module.Module
 import net.ccbluex.liquidbounce.features.module.modules.combat.ModuleCriticals
@@ -32,6 +35,7 @@ import net.ccbluex.liquidbounce.features.module.modules.movement.speed.modes.vul
 import net.ccbluex.liquidbounce.features.module.modules.movement.speed.modes.vulcan.SpeedVulcanGround286
 import net.ccbluex.liquidbounce.features.module.modules.movement.speed.modes.watchdog.SpeedHypixelBHop
 import net.ccbluex.liquidbounce.features.module.modules.world.scaffold.ModuleScaffold
+import net.ccbluex.liquidbounce.utils.client.inGame
 
 /**
  * Speed module
@@ -45,28 +49,82 @@ object ModuleSpeed : Module("Speed", Category.MOVEMENT) {
         enableLock()
     }
 
-    val modes = choices(
-        "Mode", SpeedLegitHop, arrayOf(
-            SpeedLegitHop,
-            SpeedCustom,
-            SpeedSpeedYPort,
+    /**
+     * Initialize speeds choices independently
+     *
+     * This is useful for the `OnlyOnPotionEffect` choice, which has its own set of modes
+     */
+    private fun initializeSpeeds(configurable: ChoiceConfigurable<*>) = arrayOf(
+        SpeedLegitHop(configurable),
+        SpeedCustom(configurable),
+        SpeedSpeedYPort(configurable),
 
-            SpeedVerusB3882,
-            SpeedHypixelBHop,
+        SpeedVerusB3882(configurable),
+        SpeedHypixelBHop(configurable),
 
-            SpeedSpartan524,
-            SpeedSpartan524GroundTimer,
+        SpeedSpartan524(configurable),
+        SpeedSpartan524GroundTimer(configurable),
 
-            SpeedVulcan286,
-            SpeedVulcanGround286,
-            SpeedGrimCollide,
-        )
+        SpeedVulcan286(configurable),
+        SpeedVulcanGround286(configurable),
+        SpeedGrimCollide(configurable),
     )
+
+    val modes = choices<Choice>("Mode", { it.choices[0] }, this::initializeSpeeds)
 
     private val notDuringScaffold by boolean("NotDuringScaffold", true)
     private val notWhileSneaking by boolean("NotWhileSneaking", false)
+    private object OnlyOnPotionEffect : ToggleableConfigurable(this, "OnlyOnPotionEffect", false) {
+
+        val potionEffects = choices(
+            this,
+            "PotionEffect",
+            SpeedPotionEffectChoice,
+            arrayOf(SpeedPotionEffectChoice, SlownessPotionEffectChoice, BothEffectsChoice)
+        )
+
+        val modes = choices<Choice>(this, "Mode", { it.choices[0] }, ModuleSpeed::initializeSpeeds)
+
+        override fun handleEvents(): Boolean {
+            // We cannot use our parent super.handleEvents() here, because it has been turned false
+            // when [OnlyOnPotionEffect] is enabled
+            if (!ModuleSpeed.enabled || !enabled || !inGame || !passesRequirements()) {
+                return false
+            }
+
+            return potionEffects.activeChoice.checkPotionEffects()
+        }
+
+    }
+
+    init {
+        tree(OnlyOnPotionEffect)
+    }
 
     override fun handleEvents(): Boolean {
+        // Early return if the module is not ready to be used - prevents accessing player when it's null below
+        // in case it was forgotten to be checked
+        if (!super.handleEvents()) {
+            return false
+        }
+
+        if (!passesRequirements()) {
+            return false
+        }
+
+        // We do not want to handle events if the OnlyOnPotionEffect is enabled
+        if (OnlyOnPotionEffect.enabled && OnlyOnPotionEffect.potionEffects.activeChoice.checkPotionEffects()) {
+            return false
+        }
+
+        return true
+    }
+
+    private fun passesRequirements(): Boolean {
+        if (!inGame) {
+            return false
+        }
+
         if (notDuringScaffold && ModuleScaffold.enabled) {
             return false
         }
@@ -76,13 +134,18 @@ object ModuleSpeed : Module("Speed", Category.MOVEMENT) {
             return false
         }
 
-        return super.handleEvents()
+        return true
     }
-
 
     fun shouldDelayJump(): Boolean {
         return !mc.options.jumpKey.isPressed && (SpeedAntiCornerBump.shouldDelayJump()
             || ModuleCriticals.shouldWaitForJump())
     }
 
+    abstract class PotionEffectChoice(name: String) : Choice(name) {
+        override val parent: ChoiceConfigurable<PotionEffectChoice>
+            get() = OnlyOnPotionEffect.potionEffects
+
+        abstract fun checkPotionEffects(): Boolean
+    }
 }
